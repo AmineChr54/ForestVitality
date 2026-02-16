@@ -1,0 +1,104 @@
+/* Index Selector Styles */
+.index-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.index-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+}
+
+.index-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.75rem 0.5rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.index-option:hover {
+    background: var(--bg-card);
+    border-color: var(--text-muted);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.index-option--selected {
+    background: var(--success-bg);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
+}
+
+.index-emoji {
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+.index-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+}
+
+.index-check {
+    font-size: 0.7rem;
+    color: var(--accent-primary);
+}
+
+/* Info box — on-brand green instead of blue */
+.index-description {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.6rem;
+    background: var(--success-bg);
+    border: 1px solid rgba(34, 197, 94, 0.15);
+    border-radius: var(--radius-sm);
+}
+
+.desc-icon {
+    font-size: 0.85rem;
+}
+
+.desc-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Responsive - Phone */
+@media (max-width: 480px) {
+    .index-option {
+        padding: 0.5rem 0.35rem;
+    }
+
+    .index-emoji {
+        font-size: 1.2rem;
+    }
+
+    .index-name {
+        font-size: 0.8rem;
+    }
+
+    .index-description {
+        padding: 0.5rem;
+    }
+
+    .desc-text {
+        font-size: 0.75rem;
+    }
+}

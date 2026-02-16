@@ -1,0 +1,248 @@
+/**
+ * RegionSearchbox Styles - Hierarchical Version
+ * ==============================================
+ */
+
+.region-searchbox {
+    position: relative;
+    width: 100%;
+}
+
+/* Input wrapper */
+.region-searchbox-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.region-searchbox-input-wrapper:focus-within {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.region-searchbox-icon {
+    padding-left: 12px;
+    font-size: 14px;
+    opacity: 0.6;
+}
+
+.region-searchbox-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--text-primary);
+    outline: none;
+}
+
+.region-searchbox-input::placeholder {
+    color: var(--text-muted);
+}
+
+.region-searchbox-spinner {
+    padding-right: 12px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.region-searchbox-clear {
+    background: none;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 12px;
+    transition: color 0.2s;
+}
+
+.region-searchbox-clear:hover {
+    color: var(--text-primary);
+}
+
+/* Dropdown */
+.region-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    max-height: 360px;
+    overflow-y: auto;
+    z-index: 100;
+}
+
+.region-dropdown-empty {
+    padding: 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+/* Navigation header (breadcrumb + back) */
+.region-nav-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--success-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.region-nav-back {
+    background: none;
+    border: none;
+    color: var(--accent-primary);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.region-nav-back:hover {
+    background: var(--success-bg);
+}
+
+.region-nav-breadcrumb {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.region-nav-select {
+    background: var(--accent-primary);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 4px;
+    transition: opacity 0.2s;
+}
+
+.region-nav-select:hover {
+    opacity: 0.9;
+}
+
+/* Items list */
+.region-items-list {
+    padding: 4px 0;
+}
+
+/* Region items */
+.region-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.15s;
+}
+
+.region-item:hover,
+.region-item.highlighted {
+    background: var(--success-bg);
+}
+
+.region-item-icon {
+    font-size: 16px;
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.region-item-name {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.region-item-count {
+    font-size: 11px;
+    color: var(--accent-primary);
+    background: var(--success-bg);
+    padding: 2px 8px;
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+
+.region-item-parent {
+    font-size: 12px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.region-item-arrow {
+    font-size: 14px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+/* Selected info badge */
+.region-selected-info {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: var(--success-bg);
+    border: 1px solid var(--accent-primary);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.region-selected-type {
+    font-size: 16px;
+}
+
+.region-selected-name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.region-selected-parent {
+    color: var(--text-muted);
+}
+
+/* Scrollbar styling */
+.region-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.region-dropdown::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.region-dropdown::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.region-dropdown::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}

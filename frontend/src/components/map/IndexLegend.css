@@ -1,0 +1,253 @@
+.index-legend {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 1rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 0.7rem 0.8rem;
+    min-width: 160px;
+    z-index: 1000;
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(8px);
+    /* Modern touch */
+}
+
+.legend-header {
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.legend-title {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.legend-subtitle {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.legend-scale {
+    margin-bottom: 0.5rem;
+    position: relative;
+    /* For marker positioning */
+}
+
+.scale-gradient {
+    height: 8px;
+    /* Slimmer */
+    border-radius: 4px;
+    margin-bottom: 0.25rem;
+    position: relative;
+}
+
+/* Average Marker */
+.average-marker {
+    position: absolute;
+    top: -6px;
+    width: 4px;
+    height: 20px;
+    background: #000;
+    border: 1px solid #fff;
+    transform: translateX(-50%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    z-index: 10;
+    cursor: help;
+}
+
+.dark .average-marker {
+    background: #fff;
+    border-color: #000000;
+}
+
+/* Marker Value Label (Bubble) */
+.marker-value-label {
+    position: absolute;
+    bottom: 24px;
+    /* Position above the marker */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.marker-value-label::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -4px;
+    border-width: 4px;
+    border-style: solid;
+    border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent;
+}
+
+.dark .marker-value-label {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #000;
+    font-weight: 700;
+}
+
+.dark .marker-value-label::after {
+    border-color: rgba(255, 255, 255, 0.9) transparent transparent transparent;
+}
+
+.scale-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-family: 'Monaco', 'Consolas', monospace;
+    margin-top: 0.1rem;
+}
+
+/* Categories - Horizontal 1x3 Layout */
+.legend-categories {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.2rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.category {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.category-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+.category-label {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+/* Opacity Slider */
+.legend-opacity {
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: 0.5rem;
+}
+
+.opacity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+
+.opacity-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.opacity-value {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-family: 'Monaco', 'Consolas', monospace;
+}
+
+.opacity-slider {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border-color);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+.opacity-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent, #22c55e);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.opacity-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent, #22c55e);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive - Tablet */
+@media (max-width: 768px) {
+    .index-legend {
+        min-width: 150px;
+        padding: 0.75rem;
+        bottom: 1rem;
+        left: 0.5rem;
+    }
+
+    .legend-title {
+        font-size: 0.8rem;
+    }
+
+    .legend-subtitle {
+        font-size: 0.7rem;
+    }
+
+    .category-label {
+        font-size: 0.7rem;
+    }
+}
+
+/* Responsive - Phone */
+@media (max-width: 480px) {
+    .index-legend {
+        min-width: 130px;
+        padding: 0.6rem;
+        bottom: 0.5rem;
+        left: 0.5rem;
+        border-radius: var(--radius-md);
+    }
+
+    .scale-labels {
+        font-size: 0.6rem;
+    }
+
+    .scale-gradient {
+        height: 8px;
+    }
+
+    .category {
+        gap: 0.35rem;
+    }
+
+    .category-color {
+        width: 10px;
+        height: 10px;
+    }
+
+    .category-label {
+        font-size: 0.65rem;
+    }
+}

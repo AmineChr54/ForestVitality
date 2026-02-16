@@ -1,0 +1,138 @@
+/* Region Overlay Card Styles */
+.region-overlay-card {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 1rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    width: 280px;
+    z-index: 1000;
+    box-shadow: var(--shadow-lg);
+}
+
+.overlay-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.overlay-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    line-height: 1;
+    transition: color var(--transition-fast);
+}
+
+.close-btn:hover {
+    color: var(--text-primary);
+}
+
+.overlay-description {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+.overlay-stats {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.stat-icon {
+    font-size: 1.25rem;
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-item .stat-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.stat-item .stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.overlay-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Responsive - Tablet */
+@media (max-width: 768px) {
+    .region-overlay-card {
+        width: 220px;
+        padding: 0.75rem;
+        bottom: 1rem;
+        left: 0.5rem;
+    }
+
+    .overlay-title {
+        font-size: 0.9rem;
+    }
+
+    .overlay-description {
+        font-size: 0.8rem;
+    }
+}
+
+/* Responsive - Phone */
+@media (max-width: 480px) {
+    .region-overlay-card {
+        width: calc(100% - 1rem);
+        left: 0.5rem;
+        right: 0.5rem;
+        bottom: 0.5rem;
+        padding: 0.75rem;
+    }
+
+    .overlay-stats {
+        padding: 0.5rem;
+        gap: 0.5rem;
+    }
+
+    .stat-item .stat-value {
+        font-size: 0.8rem;
+    }
+
+    .stat-item .stat-label {
+        font-size: 0.65rem;
+    }
+
+    .overlay-actions .btn {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.75rem;
+    }
+}

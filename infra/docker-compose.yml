@@ -1,0 +1,128 @@
+services:
+  # ============================
+  # OpenSearch
+  # ============================
+  opensearch:
+    image: opensearchproject/opensearch:2.11.0
+    container_name: opensearch-dev
+    environment:
+      discovery.type: single-node
+      plugins.security.disabled: "true"
+      bootstrap.memory_lock: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    networks:
+      - forest-net
+
+  # ============================
+  # Postgres (for Keycloak)
+  # ============================
+  keycloak-db:
+    image: postgres:16
+    container_name: keycloak-db-dev
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-keycloak}
+      POSTGRES_USER: ${POSTGRES_USER:-keycloak}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-keycloak}
+    ports:
+      - "5432:5432"
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql/data
+    networks:
+      - forest-net
+
+  # ============================
+  # Keycloak
+  # ============================
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.5
+    container_name: keycloak-dev
+    command: start-dev --import-realm
+    depends_on:
+      - keycloak-db
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+
+      KC_DB: postgres
+      KC_DB_URL_HOST: keycloak-db
+      KC_DB_URL_DATABASE: ${POSTGRES_DB:-keycloak}
+      KC_DB_USERNAME: ${POSTGRES_USER:-keycloak}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-keycloak}
+
+      # Important for local dev behind browser redirects
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak/import:/opt/keycloak/data/import
+      - ./keycloak/themes/forest-vitality:/opt/keycloak/themes/forest-vitality
+    networks:
+      - forest-net
+
+  # ============================
+  # MinIO (S3 Compatible Storage)
+  # ============================
+  minio:
+    image: minio/minio
+    container_name: minio-dev
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-admin123}
+    volumes:
+      - minio_data:/data
+    networks:
+      - forest-net
+
+  # ============================
+  # TiTiler (Tile Server)
+  # ============================
+  titiler:
+    image: ghcr.io/developmentseed/titiler:latest
+    container_name: titiler-dev
+    ports:
+      - "8082:8000"
+    environment:
+      # S3-style endpoint configuration for MinIO
+      AWS_S3_ENDPOINT: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-admin}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-admin123}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      AWS_VIRTUAL_HOSTING: "FALSE"
+      # GDAL needs to know MinIO is HTTP, not HTTPS
+      AWS_HTTPS: "NO"
+      AWS_NO_SIGN_REQUEST: "NO"
+      # Prevent GDAL from listing all bucket contents (perf + auth)
+      GDAL_DISABLE_READDIR_ON_OPEN: EMPTY_DIR
+      CPL_VSIL_CURL_ALLOWED_EXTENSIONS: ".tif,.tiff"
+      GDAL_HTTP_UNSAFESSL: "YES"
+      # Enable CORS for frontend Canvas access
+      CORS_ORIGINS: "*"
+      # Ensure TiTiler binds to correct port
+      PORT: "8000"
+    depends_on:
+      - minio
+    networks:
+      - forest-net
+
+networks:
+  forest-net:
+    driver: bridge
+
+volumes:
+  keycloak_db_data:
+  minio_data:

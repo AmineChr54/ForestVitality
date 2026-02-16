@@ -1,0 +1,350 @@
+/* Forest Vitality - Keycloak Login Theme */
+/* Clean rewrite for proper Keycloak styling */
+
+/* ========================================
+   Reset and Base
+   ======================================== */
+html,
+body {
+    background: #0a0f14 !important;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+.login-pf,
+.login-pf body,
+#kc-login {
+    background: #0a0f14 !important;
+}
+
+/* Background gradient overlay */
+.login-pf::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        radial-gradient(ellipse at 20% 20%, rgba(34, 197, 94, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ========================================
+   Main Container - Center everything
+   ======================================== */
+.login-pf,
+.login-pf body {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    min-height: 100vh !important;
+}
+
+.login-pf .container-fluid,
+.login-pf .container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 2rem;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+}
+
+#kc-content-wrapper {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+/* ========================================
+   Header Section
+   ======================================== */
+#kc-header {
+    text-align: center;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
+    background: transparent !important;
+}
+
+#kc-header-wrapper {
+    padding: 0;
+    color: transparent;
+    font-size: 0;
+}
+
+/* Tree logo */
+#kc-header-wrapper::before {
+    content: '🌲';
+    display: block;
+    font-size: 3rem;
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #22c55e, #10b981);
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    line-height: 80px;
+    text-align: center;
+    box-shadow: 0 0 40px rgba(34, 197, 94, 0.3);
+}
+
+/* App title */
+#kc-header-wrapper::after {
+    content: 'VitalityForest';
+    display: block;
+    font-size: 1.75rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #22c55e, #10b981);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.25rem;
+}
+
+/* ========================================
+   Login Card
+   ======================================== */
+.card-pf,
+#kc-form-login,
+.login-pf .card-pf {
+    background: #141a22 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 16px !important;
+    padding: 2rem !important;
+    max-width: 400px;
+    margin: 0 auto;
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.4),
+        0 0 60px rgba(34, 197, 94, 0.08) !important;
+}
+
+/* ========================================
+   Page Title
+   ======================================== */
+#kc-page-title {
+    color: #22c55e !important;
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+    margin-bottom: 1.5rem !important;
+}
+
+/* ========================================
+   Form Elements
+   ======================================== */
+.form-group {
+    margin-bottom: 1.25rem !important;
+}
+
+.form-group label,
+label[for="username"],
+label[for="password"] {
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    color: #94a3b8 !important;
+    margin-bottom: 0.5rem !important;
+    display: block !important;
+}
+
+/* Input fields */
+.form-control,
+input[type="text"],
+input[type="password"],
+input[type="email"],
+#username,
+#password,
+.pf-c-form-control {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    padding: 0.875rem 1rem !important;
+    font-size: 1rem !important;
+    color: #e2e8f0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    transition: all 0.2s ease !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+}
+
+/* Password field container */
+.pf-c-input-group {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+}
+
+.pf-c-input-group input {
+    border: none !important;
+    background: transparent !important;
+}
+
+.form-control:focus,
+input:focus {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: #22c55e !important;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15) !important;
+    outline: none !important;
+}
+
+.form-control::placeholder,
+input::placeholder {
+    color: #4a5568 !important;
+}
+
+/* Ensure password input group layout */
+.pf-c-input-group {
+    display: flex;
+    align-items: center;
+    padding-right: 0.5rem;
+}
+
+.pf-c-input-group input {
+    flex: 1;
+}
+
+/* ========================================
+   Submit Button
+   ======================================== */
+/* ========================================
+   Submit Button
+   ======================================== */
+#kc-form-buttons {
+    margin-top: 0.5rem !important;
+}
+
+.btn-primary,
+#kc-login,
+input[type="submit"],
+button[type="submit"] {
+    background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 1rem 1.5rem !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    color: white !important;
+    cursor: pointer !important;
+    width: 100% !important;
+    width: 100% !important;
+    margin-top: 0.25rem !important;
+    transition: all 0.2s ease !important;
+}
+
+.btn-primary:hover,
+input[type="submit"]:hover,
+button[type="submit"]:hover {
+    background: linear-gradient(135deg, #16a34a, #15803d) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.35) !important;
+}
+
+/* ========================================
+   Alerts and Errors
+   ======================================== */
+.alert {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border: 1px solid rgba(239, 68, 68, 0.25) !important;
+    border-left: 3px solid #ef4444 !important;
+    border-radius: 8px !important;
+    color: #fca5a5 !important;
+    padding: 0.75rem 1rem !important;
+    margin-bottom: 1rem !important;
+    font-size: 0.875rem !important;
+}
+
+.alert-error,
+.alert-warning {
+    background: rgba(239, 68, 68, 0.1) !important;
+}
+
+.kc-feedback-text {
+    color: #f87171 !important;
+    font-size: 0.8rem !important;
+    margin-top: 0.25rem !important;
+}
+
+/* ========================================
+   Links
+   ======================================== */
+a,
+.login-pf a {
+    color: #22c55e !important;
+    text-decoration: none !important;
+    transition: color 0.2s ease !important;
+}
+
+a:hover {
+    color: #4ade80 !important;
+    text-decoration: underline !important;
+}
+
+/* ========================================
+   Form Options / Footer
+   ======================================== */
+#kc-form-options,
+#kc-info-wrapper,
+.login-pf-settings {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: center;
+    font-size: 0.875rem;
+    color: #64748b;
+}
+
+/* ========================================
+   Hide Unwanted Elements
+   ======================================== */
+#kc-locale,
+.kc-social-section,
+#kc-registration,
+.login-pf-page-header {
+    display: none !important;
+}
+
+/* ========================================
+   Password Toggle Button
+   ======================================== */
+.pf-c-button.pf-m-control {
+    background: transparent !important;
+    border: none !important;
+    color: #64748b !important;
+    padding: 0.5rem !important;
+}
+
+.pf-c-button.pf-m-control:hover {
+    color: #94a3b8 !important;
+}
+
+/* ========================================
+   Remember Me Checkbox
+   ======================================== */
+.checkbox label,
+#rememberMe {
+    color: #94a3b8 !important;
+    font-size: 0.875rem !important;
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+@media (max-width: 480px) {
+    .card-pf {
+        padding: 1.5rem !important;
+        margin: 1rem !important;
+    }
+
+    #kc-header-wrapper::before {
+        width: 64px;
+        height: 64px;
+        font-size: 2rem;
+        line-height: 64px;
+    }
+}

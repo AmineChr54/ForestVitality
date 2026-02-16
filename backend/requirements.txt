@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+gunicorn
+opensearch-py
+python-dotenv
+rasterio
+boto3
+mgrs
+packaging
+langchain
+langchain-openai
+python-jose[cryptography]
+requests
+pytest

@@ -1,0 +1,217 @@
+/* Region Select Page Styles */
+.region-page {
+    display: flex;
+    height: 100%;
+    gap: 0;
+}
+
+.region-sidebar {
+    width: 320px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 1.25rem;
+}
+
+.sidebar-header-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.region-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.region-list-loading {
+    padding: 0.5rem;
+}
+
+.region-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.875rem 1rem;
+    background: var(--bg-tertiary);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.region-item:hover {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+}
+
+.region-item--selected {
+    background: var(--success-bg);
+    border-color: var(--accent-primary);
+}
+
+.region-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.region-name {
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.region-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text-secondary);
+}
+
+.empty-icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+.region-map-container {
+    flex: 1;
+    position: relative;
+    border-radius: 0;
+    overflow: hidden;
+}
+
+.drawing-hint {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    padding: 0.75rem 1.25rem;
+    border-radius: 100px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+}
+
+.hint-icon {
+    font-size: 1.1rem;
+}
+
+/* Modal */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 1rem;
+}
+
+.modal {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    justify-content: flex-end;
+}
+
+/* Responsive - Tablet */
+@media (max-width: 768px) {
+    .region-page {
+        flex-direction: column;
+        height: auto;
+        min-height: 100%;
+    }
+
+    .region-sidebar {
+        width: 100%;
+        max-height: 240px;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        overflow-y: auto;
+    }
+
+    .region-map-container {
+        min-height: 50vh;
+        flex: 1;
+    }
+
+    .drawing-hint {
+        font-size: 0.8rem;
+        padding: 0.5rem 1rem;
+    }
+}
+
+/* Responsive - Phone */
+@media (max-width: 480px) {
+    .region-sidebar {
+        max-height: 180px;
+        padding: 1rem;
+    }
+
+    .section-title {
+        font-size: 1rem;
+    }
+
+    .region-item {
+        padding: 0.7rem 0.75rem;
+    }
+
+    .region-name {
+        font-size: 0.9rem;
+    }
+
+    .region-map-container {
+        min-height: 45vh;
+    }
+
+    .drawing-hint {
+        font-size: 0.75rem;
+        bottom: 1rem;
+    }
+
+    .modal {
+        max-width: 100%;
+        margin: 0 0.5rem;
+    }
+}

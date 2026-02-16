@@ -1,0 +1,92 @@
+# Root
+.DS_Store
+.idea/
+.vscode/
+.history/
+*.log
+logs/
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# OS-specific
+Thumbs.db
+desktop.ini
+Icon?
+ehthumbs.db
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.local.example
+!.env.production.example
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Python (backend)
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.coverage
+coverage/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Backend data & artifacts
+backend/data/
+backend/datasets/
+backend/storage/
+backend/downloads/
+backend/.cache/
+backend/tmp/
+backend/*.db
+backend/*.sqlite
+backend/*.sqlite3
+
+# Node/JS (frontend)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.turbo/
+frontend/.cache/
+frontend/.eslintcache
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp/
+.pnp.js
+
+# Build outputs
+dist/
+build/
+out/
+tmp/
+cache/
+.cache/
+bin/
+
+# Docker & infra
+infra/.env
+infra/.env.*
+!infra/.env.example
+!infra/.env.prod.example
+infra/.docker/
+infra/keys/
+docker-compose.override.yml
+**/.dockerignore
+
+/temporary-testing-folder
+
+/.agent
