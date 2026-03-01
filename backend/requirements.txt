@@ -12,3 +12,4 @@ langchain-openai
 python-jose[cryptography]
 requests
 pytest
+pytest-cov

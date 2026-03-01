@@ -48,6 +48,22 @@ tasks:
     dir: frontend
     cmd: npm run dev
 
+  test:backend:
+    desc: Run backend tests (pytest)
+    dir: backend
+    cmd: powershell -Command "..\.venv\Scripts\Activate.ps1; pytest tests/ -q --tb=short"
+
+  test:frontend:
+    desc: Run frontend tests (vitest)
+    dir: frontend
+    cmd: npm test
+
+  test:
+    desc: Run all tests (backend + frontend)
+    cmds:
+      - task: test:backend
+      - task: test:frontend
+
   stop:
     desc: Stop all Docker services
     cmd: docker-compose -f infra/docker-compose.yml stop
