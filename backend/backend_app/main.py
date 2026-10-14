@@ -1,11 +1,9 @@
-from fastapi import FastAPI
-from fastapi import Request, Body
-from fastapi.responses import JSONResponse, HTMLResponse
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import httpx
+import logging
 import os
-from pathlib import Path
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from backend_app.controllers.ingest_controller import router as ingest_router
 from backend_app.controllers.save_log_controller import router as save_log_router
@@ -19,14 +17,16 @@ from backend_app.security.bundles.security.domain.exceptions import (
     AuthorizationError,
 )
 
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
+logger = logging.getLogger(__name__)
 
-
-app = FastAPI()
-
-# Pydantic model for token generation request
-class TokenRequest(BaseModel):
-    username: str
-    password: str
+app = FastAPI(
+    title="Forest Vitality API",
+    description="Satellite-based forest health monitoring (Sentinel-2 vegetation indices).",
+)
 
 # Configure CORS
 _cors_origins = os.getenv(
@@ -57,52 +57,6 @@ def health():
     return {"status": "ok"}
 
 
-@app.get("/token-generator", response_class=HTMLResponse)
-async def token_generator():
-    """Serve the token generator HTML page"""
-    try:
-        html_path = Path(__file__).parent.parent / "token_generator.html"
-        if html_path.exists():
-            return html_path.read_text(encoding='utf-8')
-        return f"<h1>Token generator not found</h1><p>Looking for: {html_path}</p>"
-    except Exception as e:
-        return f"<h1>Error loading token generator</h1><p>{str(e)}</p>"
-
-
-@app.post("/api/generate-token")
-async def generate_token(request: TokenRequest):
-    """Proxy endpoint to generate Keycloak tokens"""
-    _kc_url = os.getenv("KEYCLOAK_URL", "http://localhost:8080")
-    _kc_realm = os.getenv("KEYCLOAK_REALM", "geo-platform")
-    _kc_client_id = os.getenv("KEYCLOAK_CLIENT_ID", "geo-platform-backend")
-    _token_url = f"{_kc_url}/realms/{_kc_realm}/protocol/openid-connect/token"
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                _token_url,
-                data={
-                    "grant_type": "password",
-                    "client_id": _kc_client_id,
-                    "username": request.username,
-                    "password": request.password,
-                },
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
-            )
-            
-            if response.status_code != 200:
-                return JSONResponse(
-                    status_code=response.status_code,
-                    content={"error": "Authentication failed"},
-                )
-            
-            return response.json()
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"error": str(e)},
-        )
-
-
 @app.get("/os-health")
 def os_health():
     client = get_client()
@@ -113,7 +67,7 @@ def os_health():
 async def authentication_exception_handler(
     request: Request, exc: AuthenticationError
 ):
-    print(f"❌ AUTHENTICATION ERROR: {str(exc)}")
+    logger.warning("Authentication error: %s", exc)
     return JSONResponse(
         status_code=401,
         content={"detail": str(exc)},

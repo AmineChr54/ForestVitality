@@ -25,17 +25,7 @@ from backend_app.services.copernicus_api import CopernicusAPIClient
 
 load_dotenv()
 
-# Setup logging
-# Setup logging
 logger = logging.getLogger(__name__)
-
-# --- DEBUG: File Logger ---
-if not logger.handlers:
-    fh = logging.FileHandler('agent_debug.log')
-    fh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-    logger.addHandler(fh)
-    logger.setLevel(logging.INFO) # Capture tool execution details
-# --------------------------
 
 # =============================================================================
 # Tool Definitions - RBAC-Gated Functions

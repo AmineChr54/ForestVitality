@@ -7,6 +7,7 @@ Handles ingestion of Sentinel-2 scenes from Copernicus API with support for:
 - Smart caching to avoid re-downloading existing data
 """
 
+import logging
 from typing import Dict, List, Optional, Tuple, Generator, Any
 import threading
 import queue
@@ -18,6 +19,8 @@ from backend_app.services.conversion_service import convert_raw_to_scene_metadat
 from backend_app.repositories.scene_repository import SceneRepository
 from backend_app.services.band_fetch_service import process_scene_bands
 from backend_app.utils.spatial import get_intersecting_mgrs_tiles
+
+logger = logging.getLogger(__name__)
 
 
 # Required bands for vegetation analysis
@@ -58,7 +61,7 @@ def ingest_by_tiles(
     # Auto-calculate MGRS tiles from bbox if not provided
     if mgrs_tiles is None:
         mgrs_tiles = get_intersecting_mgrs_tiles(bbox)
-        print(f"[INFO] 🌍 BBox covers tiles: {', '.join(mgrs_tiles)}")
+        logger.info(f"BBox covers tiles: {', '.join(mgrs_tiles)}")
     
     results = {
         "tiles_processed": [],
@@ -73,7 +76,7 @@ def ingest_by_tiles(
     
     # Process each tile independently
     for tile_id in mgrs_tiles:
-        print(f"\n[INFO] 🏗️  Starting MGRS tile: {tile_id}")
+        logger.info(f"Starting MGRS tile: {tile_id}")
         
         try:
             tile_result = _ingest_tile(
@@ -92,19 +95,19 @@ def ingest_by_tiles(
                 results["total_scenes"] += len(tile_result["scenes"])
             else:
                 results["tiles_skipped"].append(tile_id)
-                print(f"[INFO] No scenes found for tile {tile_id}")
+                logger.info(f"No scenes found for tile {tile_id}")
                 
         except Exception as e:
             error_msg = f"Tile {tile_id}: {str(e)}"
             results["errors"].append(error_msg)
-            print(f"[ERROR] {error_msg}")
+            logger.error(error_msg)
     
     # Summary
-    print(f"\n[SUMMARY] ✅ Ingestion complete: {results['total_scenes']} scenes processed across {len(results['tiles_processed'])} tiles.")
+    logger.info(f"Ingestion complete: {results['total_scenes']} scenes processed across {len(results['tiles_processed'])} tiles.")
     if results["errors"]:
-        print(f"          ⚠️  Errors: {len(results['errors'])}")
+        logger.warning(f"Errors: {len(results['errors'])}")
     if results["tiles_skipped"]:
-        print(f"          ⏭️  Skipped tiles (no scenes): {', '.join(results['tiles_skipped'])}")
+        logger.info(f"Skipped tiles (no scenes): {', '.join(results['tiles_skipped'])}")
     
     return results
 
@@ -155,7 +158,7 @@ def _ingest_tile(
             if not hasattr(scene, "product_id") or not scene.product_id:
                 raise ValueError("Missing product_id in SceneMetadata")
             
-            print(f"  [INFO] 🔎 Processing scene: {scene.id}")
+            logger.info(f"Processing scene: {scene.id}")
             
             # Store scene metadata
             repository.store_scene(scene)
@@ -179,9 +182,9 @@ def _ingest_tile(
             if cog_result.get("scene_path"):
                 repository.update_scene_cog_path(scene.id, cog_result["scene_path"])
                 status = "cached" if cog_result.get("cached") else "downloaded"
-                print(f"  [SUCCESS] ✅ Processed {scene.id} ({status})")
+                logger.info(f"Processed {scene.id} ({status})")
             else:
-                print(f"  [WARN] ⚠️ No scene COG created for {scene.id}: {cog_result.get('error')}")
+                logger.warning(f"No scene COG created for {scene.id}: {cog_result.get('error')}")
                 result["errors"].append(f"No COG for {scene.id}")
             
             result["scenes"].append(scene.id)
@@ -189,7 +192,7 @@ def _ingest_tile(
         except Exception as e:
             error_msg = f"Scene processing failed: {e}"
             result["errors"].append(error_msg)
-            print(f"[ERROR] {error_msg}")
+            logger.error(error_msg)
     
     return result
 
@@ -281,7 +284,7 @@ def ingest_scenes_stream(
             
             if not initial_check or not initial_check.get("features"):
                 # No scenes found for the requested date range
-                print(f"[INFO] No scenes found for date range {from_date} to {to_date}. Searching for nearest...")
+                logger.info(f"No scenes found for date range {from_date} to {to_date}. Searching for nearest...")
                 
                 # Expand search window (+/- 30 days)
                 from datetime import datetime, timedelta
@@ -398,7 +401,7 @@ def ingest_scenes_stream(
                             total_scenes += 1
                             
                             scene_path = cog_result.get("scene_path")
-                            print(f"[INFO] 📤 Emitting scene_complete for {scene.id} -> {scene_path}")
+                            logger.info(f"Emitting scene_complete for {scene.id} -> {scene_path}")
 
                             emit("scene_complete", 
                                  scene_id=scene.id,

@@ -8,6 +8,7 @@ NEW: Stacks bands into single multi-band COG for TiTiler index calculations.
 Band order: [B02, B03, B04, B8A, B11] for NDVI, NDWI, EVI, NDMI
 """
 
+import logging
 import os
 import re
 import requests
@@ -21,6 +22,8 @@ from botocore.client import Config
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 from typing import Dict, Optional, Tuple, List
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -74,7 +77,7 @@ def generate_scene_path(scene_id: str) -> str:
         return f"{tile_id}/{year}/{month}/{day}/scene.tif"
         
     except Exception as e:
-        print(f"[WARN] Non-standard scene ID format, using fallback path: {e}")
+        logger.warning(f"Non-standard scene ID format, using fallback path: {e}")
         return f"misc/{scene_id}/scene.tif"
 
 
@@ -118,11 +121,11 @@ def download_band(band_name: str, url: str, token: str, progress_callback=None) 
                     progress_callback(chunk_size, 0)
                     
         content = b"".join(content_chunks)
-        print(f"       ↓ {band_name}: {total_size / (1024*1024):.1f} MB")
+        logger.info(f"Downloaded {band_name}: {total_size / (1024*1024):.1f} MB")
         return (band_name, content)
         
     except Exception as e:
-        print(f"[ERROR] Failed to download {band_name}: {e}")
+        logger.error(f"Failed to download {band_name}: {e}")
         return (band_name, None)
 
 
@@ -137,7 +140,7 @@ def stack_bands_to_cog(band_data: Dict[str, bytes], target_resolution: int = 20)
     Returns:
         Bytes of the stacked multi-band COG
     """
-    print(f"       📦 Stacking bands...")
+    logger.info("Stacking bands...")
     
     # First pass: determine target shape based on requested resolution
     reference_band = None
@@ -190,7 +193,7 @@ def stack_bands_to_cog(band_data: Dict[str, bytes], target_resolution: int = 20)
     
     for band_name in BAND_ORDER:
         if band_name not in band_data or band_data[band_name] is None:
-            print(f"[WARN] Missing band {band_name}, using zeros")
+            logger.warning(f"Missing band {band_name}, using zeros")
             stacked_data.append(np.zeros((target_height, target_width), dtype=np.uint16))
             continue
             
@@ -236,7 +239,7 @@ def stack_bands_to_cog(band_data: Dict[str, bytes], target_resolution: int = 20)
         dst_memfile.seek(0)
         cog_bytes = dst_memfile.read()
         
-    print(f"       ✅ Stacked {len(BAND_ORDER)} bands @ {target_resolution}m → {len(cog_bytes) / (1024*1024):.1f} MB COG")
+    logger.info(f"Stacked {len(BAND_ORDER)} bands @ {target_resolution}m -> {len(cog_bytes) / (1024*1024):.1f} MB COG")
     return cog_bytes
 
 
@@ -260,16 +263,16 @@ def process_scene_bands(band_urls: dict, token: str, scene_id: str, progress_cal
     except ClientError:
         try:
             s3_client.create_bucket(Bucket=BUCKET_NAME)
-            print(f"[INFO] Created bucket: {BUCKET_NAME}")
+            logger.info(f"Created bucket: {BUCKET_NAME}")
         except Exception as e:
-            print(f"[WARN] Could not ensure bucket exists: {e}")
+            logger.warning(f"Could not ensure bucket exists: {e}")
 
     # Check if scene already exists
     scene_path = generate_scene_path(scene_id)
     s3_path = f"s3://{BUCKET_NAME}/{scene_path}"
     
     if check_scene_exists(s3_client, BUCKET_NAME, scene_path):
-        print(f"       💾 Cached")
+        logger.info("Cached stacked COG")
         return {
             "scene_path": s3_path,
             "bands": BAND_ORDER,
@@ -280,14 +283,14 @@ def process_scene_bands(band_urls: dict, token: str, scene_id: str, progress_cal
     needed_bands = {b: url for b, url in band_urls.items() if b in BAND_ORDER}
     
     if len(needed_bands) == 0:
-        print(f"       [ERROR] No matching bands found in provided URLs.")
+        logger.error("No matching bands found in provided URLs.")
         return {"scene_path": None, "bands": [], "error": "No compatible Sentinel-2 bands found (B02, B03, B04, B8A, B11 required)"}
     
     if len(needed_bands) < len(BAND_ORDER):
         missing = set(BAND_ORDER) - set(needed_bands.keys())
-        print(f"       ⚠️  Missing bands: {', '.join(sorted(missing))}")
+        logger.warning(f"Missing bands: {', '.join(sorted(missing))}")
     
-    print(f"       📥 Downloading {len(needed_bands)} bands...")
+    logger.info(f"Downloading {len(needed_bands)} bands...")
     
     # Download bands in parallel
     band_data = {}
@@ -303,14 +306,14 @@ def process_scene_bands(band_urls: dict, token: str, scene_id: str, progress_cal
                 band_data[band_name] = content
     
     if not band_data:
-        print(f"[ERROR] No bands downloaded for scene {scene_id}")
+        logger.error(f"No bands downloaded for scene {scene_id}")
         return {"scene_path": None, "bands": [], "error": "No bands downloaded"}
     
     # Stack bands into multi-band COG
     try:
         cog_bytes = stack_bands_to_cog(band_data, target_resolution=resolution)
     except Exception as e:
-        print(f"[ERROR] Failed to stack bands: {e}")
+        logger.error(f"Failed to stack bands: {e}")
         return {"scene_path": None, "bands": [], "error": str(e)}
     
     # Upload to MinIO
@@ -321,9 +324,9 @@ def process_scene_bands(band_urls: dict, token: str, scene_id: str, progress_cal
             Body=cog_bytes,
             ContentType="image/tiff"
         )
-        print(f"       ☁️  Uploaded → {scene_path}")
+        logger.info(f"Uploaded -> {scene_path}")
     except Exception as e:
-        print(f"       ❌ Upload failed: {e}")
+        logger.error(f"Upload failed: {e}")
         return {"scene_path": None, "bands": [], "error": str(e)}
     
     return {

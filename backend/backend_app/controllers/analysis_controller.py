@@ -26,7 +26,7 @@ def analyze(
 
     background_tasks.add_task(
         run_analysis,
-        request.area.dict(),
+        request.area.model_dump(),
         request.index,
         str(request.from_date),
         str(request.to_date),

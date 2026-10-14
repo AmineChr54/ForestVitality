@@ -1,3 +1,4 @@
+import logging
 import os
 import requests
 from dotenv import load_dotenv
@@ -9,6 +10,8 @@ TOKEN_URL = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/
 SEARCH_URL = "https://stac.dataspace.copernicus.eu/v1/search"
 
 import time
+
+logger = logging.getLogger(__name__)
 
 class CopernicusAPIClient:
 
@@ -42,7 +45,7 @@ class CopernicusAPIClient:
                 "password": self.password,
                 "client_id": "cdse-public", # Standard public client for password flow
             }
-            print(f"[INFO] 🔑 Authenticating as user: {self.username}")
+            logger.info(f"Authenticating as user: {self.username}")
         else:
             # Use Client Credentials Grant
             data = {
@@ -50,11 +53,11 @@ class CopernicusAPIClient:
                 "client_id": self.client_id,
                 "client_secret": self.client_secret
             }
-            print(f"[INFO] 🔑 Authenticating with Client ID: {self.client_id}")
+            logger.info(f"Authenticating with Client ID: {self.client_id}")
 
         response = requests.post(TOKEN_URL, data=data)
         if response.status_code != 200:
-            print("TOKEN ERROR:", response.text)
+            logger.error("Copernicus token request failed: %s", response.text)
             raise ValueError("Token request failed")
 
         json_resp = response.json()
@@ -62,7 +65,7 @@ class CopernicusAPIClient:
         # Default to 600s if not provided
         expires_in = json_resp.get("expires_in", 600)
         self._token_expires_at = time.time() + expires_in
-        print(f"[INFO] 🔑 Refreshed Copernicus token (expires in {expires_in}s)")
+        logger.info(f"Refreshed Copernicus token (expires in {expires_in}s)")
 
     def _get_token(self):
         # Legacy method for compatibility if needed, but better to use property
@@ -95,12 +98,12 @@ class CopernicusAPIClient:
         response = requests.post(SEARCH_URL, json=payload, headers=headers)
         
         if response.status_code != 200:
-            print(f"[ERROR] Copernicus API search failed: {response.status_code}")
+            logger.error(f"Copernicus API search failed: {response.status_code}")
             return None
         
         result = response.json()
         scene_count = len(result.get('features', []))
-        print(f"[INFO] 🛰️  Copernicus API returned {scene_count} scenes")
+        logger.info(f"Copernicus API returned {scene_count} scenes")
         return result
 
     def search_by_id(self, product_id: str):
@@ -116,7 +119,7 @@ class CopernicusAPIClient:
         
         response = requests.post(SEARCH_URL, json=payload, headers=headers)
         if response.status_code != 200:
-            print(f"[ERROR] Copernicus API ID search failed: {response.status_code}")
+            logger.error(f"Copernicus API ID search failed: {response.status_code}")
             return None
             
         return response.json()

@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import boto3
@@ -16,6 +17,8 @@ from backend_app.formulas.vegetation_formulas import (
     calculate_ndwi,
     calculate_ndmi,
 )
+
+logger = logging.getLogger(__name__)
 
 # Robust mapping with fallbacks
 BAND_MAP = {
@@ -63,7 +66,7 @@ def discover_bands_in_minio(scene_id: str) -> Dict[str, str]:
         tile_id = tile_match.group(1)
         base_prefix = f"{tile_id}/{year}/{month}/" # Scan entire month for date mismatches
         
-        print(f"[DEBUG] Scanning MinIO month folder: {base_prefix}")
+        logger.debug(f"Scanning MinIO month folder: {base_prefix}")
         response = s3.list_objects_v2(Bucket=BUCKET_NAME, Prefix=base_prefix)
         
         if 'Contents' not in response:
@@ -73,7 +76,7 @@ def discover_bands_in_minio(scene_id: str) -> Dict[str, str]:
         for obj in response['Contents']:
             key = obj['Key']
             if key.endswith("scene.tif"):
-                print(f"[DEBUG] Found self-healing COG: {key}")
+                logger.debug(f"Found self-healing COG: {key}")
                 return {"_cog": key}
         
         # Look for individual bands
@@ -91,7 +94,7 @@ def discover_bands_in_minio(scene_id: str) -> Dict[str, str]:
                     found_paths[band_name] = key
 
     except Exception as e:
-        print(f"[WARN] MinIO discovery failed: {e}")
+        logger.warning(f"MinIO discovery failed: {e}")
         
     return found_paths
 
@@ -154,7 +157,7 @@ def get_vegetation_index(scene_id: str):
                 needs_sync = True
 
         if needs_sync:
-            print(f"[INFO] Metadata out of sync for {scene_id}. Probing MinIO...")
+            logger.info(f"Metadata out of sync for {scene_id}. Probing MinIO...")
             discovery = discover_bands_in_minio(scene_id)
             
             if "_cog" in discovery:

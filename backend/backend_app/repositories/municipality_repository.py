@@ -1,7 +1,10 @@
+import logging
 import json
 from typing import Any, Dict
 from pathlib import Path
 from functools import lru_cache
+
+logger = logging.getLogger(__name__)
 
 # Define paths
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -16,7 +19,7 @@ def get_municipality_index() -> Dict[str, Any]:
     municipality_index = {}
 
     try:
-        print(f"Loading municipality data from {GEOJSON_PATH}...")
+        logger.info(f"Loading municipality data from {GEOJSON_PATH}...")
         with open(GEOJSON_PATH, "r", encoding="utf-8") as f:
             data = json.load(f)
 
@@ -32,9 +35,9 @@ def get_municipality_index() -> Dict[str, Any]:
                 municipality_index[name.lower().strip()] = feature
                 count += 1
         
-        print(f"Successfully loaded {count} municipalities into memory.")
+        logger.info(f"Successfully loaded {count} municipalities into memory.")
         
     except Exception as e:
-        print(f"Error loading municipality data: {e}")
+        logger.error(f"Error loading municipality data: {e}")
         
     return municipality_index
