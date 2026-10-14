@@ -1,6 +1,8 @@
 # 🌲 Forest Vitality
 
-A comprehensive satellite-based forest health monitoring platform that leverages Sentinel satellite imagery and advanced vegetation indices to provide real-time analysis of forest vitality. Built with a modern full-stack architecture featuring Python FastAPI backend, React TypeScript frontend, and containerized microservices.
+[![CI](https://github.com/AmineChr54/ForestVitality/actions/workflows/ci.yml/badge.svg)](https://github.com/AmineChr54/ForestVitality/actions/workflows/ci.yml)
+
+A satellite-based forest health monitoring platform for Germany. It pulls Sentinel-2 imagery from the Copernicus Data Space, computes vegetation indices (NDVI, NDWI, EVI, NDMI) for any municipality or hand-drawn region, renders them as map overlays, and lets users explore the results with an AI assistant. Full-stack: FastAPI backend, React + TypeScript frontend, Keycloak RBAC, and a Docker Compose infrastructure.
 
 ---
 
@@ -15,30 +17,29 @@ A comprehensive satellite-based forest health monitoring platform that leverages
 - [Running the Application](#running-the-application)
 - [Available Services](#available-services)
 - [Authentication](#authentication)
+- [Running Tests](#running-tests)
 
 ---
 
 ## 🎯 Overview
 
-**Forest Vitality** provides environmental professionals, researchers, and forest managers with:
+**Forest Vitality** gives forest managers and analysts:
 
-- **Real-time forest health monitoring** using satellite-derived vegetation indices (NDVI, etc.)
-- **Interactive geospatial mapping** with municipality-level analysis
-- **Data ingestion** from Copernicus Sentinel satellites
-- **REST APIs** for programmatic access to analysis results
-- **Secure authentication** via Keycloak
-- **AI-powered chat agent** for intelligent data insights
-- **Search and retrieval** of historical satellite data
+- **Vegetation-index maps** for any German municipality (Bundesland → Bezirk → Kreis hierarchy) or a hand-drawn polygon
+- **Split-view comparison** of two dates for the same region
+- **On-demand ingestion** of Sentinel-2 L2A scenes from Copernicus, streamed to the UI with live progress (Server-Sent Events)
+- **Region statistics** (mean / min / max) computed on the fly from Cloud-Optimized GeoTIFFs
+- **AI assistant** (LangChain agent on Azure OpenAI) that can search scenes, look up municipalities and compute indices through role-gated tools
+- **Role-based access control** with Keycloak (admin, forest analyst, data manager, viewer)
 
 ### Key Features
 
-✨ Sentinel satellite data integration  
-🗺️ Interactive maps with vector tiles (TiTiler)  
-🤖 AI-powered analysis agent with LangChain  
-🔐 Role-Based Access Control (RBAC)  
-📊 Advanced vegetation index calculations  
-💾 MinIO cloud storage integration  
-🔍 Full-text search with OpenSearch  
+🛰️ Sentinel-2 band download, resampling and stacking into COGs (Rasterio)  
+🗺️ Raster tiles via TiTiler band-math expressions, clipped client-side to the region  
+🤖 LangChain tool-calling agent with geo-context from the current map view  
+🔐 Keycloak OIDC login, permission mapping and audit logging  
+💾 MinIO (S3) storage for scene COGs, OpenSearch for scene metadata and logs  
+✅ Backend and frontend test suites, run in GitHub Actions on every push  
 
 ---
 
@@ -65,7 +66,7 @@ graph TB
         KC["Keycloak Auth<br/>Port 8080"]
         Sentinel["Sentinel API<br/>Copernicus Hub"]
         TiTiler["TiTiler<br/>Port 8082"]
-        LLM["OpenAI LLM"]
+        LLM["Azure OpenAI"]
     end
     
     subgraph Infrastructure["Infrastructure"]
@@ -102,28 +103,27 @@ graph TB
 ## 🛠️ Tech Stack
 
 ### Backend
-- **Framework**: FastAPI (Python)
-- **Server**: Uvicorn with Gunicorn
-- **Data Processing**: Rasterio, GDAL
-- **Search**: OpenSearch
-- **Storage**: MinIO (S3-compatible)
-- **Authentication**: Keycloak, JWT
-- **AI/ML**: LangChain, OpenAI
-- **APIs**: Copernicus Hub, TiTiler
+- **Framework**: FastAPI (Python 3.11), served by Gunicorn with Uvicorn workers
+- **Raster processing**: Rasterio / GDAL, NumPy
+- **Metadata & logs**: OpenSearch
+- **Storage**: MinIO (S3-compatible, via boto3)
+- **Auth**: Keycloak JWT validation (JWKS), permission mapping, audit logging
+- **AI**: LangChain + Azure OpenAI
+- **External APIs**: Copernicus Data Space (STAC search + OAuth), TiTiler
+- **Tests**: pytest, pytest-cov
 
 ### Frontend
-- **Framework**: React with TypeScript
-- **Build Tool**: Vite
-- **Styling**: CSS
-- **State Management**: Redux/Context
-- **HTTP Client**: Axios
-- **Mapping**: Leaflet/Mapbox
+- **Framework**: React 18 + TypeScript, Vite
+- **Mapping**: Leaflet with a custom canvas layer for clipped TiTiler tiles
+- **State**: Zustand
+- **HTTP**: Axios (auth + error interceptors), fetch-based SSE client
+- **Auth**: Keycloak OIDC authorization-code flow
+- **Tests**: Vitest, ESLint (typescript-eslint, React Hooks rules)
 
 ### Infrastructure
-- **Containerization**: Docker
-- **Orchestration**: Docker Compose
-- **Task Runner**: Task (Taskfile.yml)
-- **Package Management**: pip, npm
+- **Containers**: Docker, Docker Compose (OpenSearch, Keycloak + PostgreSQL, MinIO, TiTiler)
+- **CI**: GitHub Actions
+- **Task runner**: [Task](https://taskfile.dev) (`Taskfile.yml`)
 
 ---
 
@@ -133,8 +133,8 @@ Before starting, ensure you have the following installed:
 
 ### Required
 - **Docker Desktop** - [Download](https://www.docker.com/products/docker-desktop)
-- **Node.js** (v16 or higher) - [Download](https://nodejs.org/)
-- **Python** (v3.9 or higher) - [Download](https://www.python.org/)
+- **Node.js** 20.19+ or 22+ - [Download](https://nodejs.org/)
+- **Python** 3.11+ - [Download](https://www.python.org/)
 - **Git** - [Download](https://git-scm.com/)
 
 ### Recommended
@@ -161,7 +161,15 @@ cd ForestVitality
 
 ### Step 2: Set Up Environment Variables
 
-Configure `.env` files for backend and frontend using the provided `.env` variables.
+Copy the templates and fill in your own credentials:
+
+```bash
+cp backend/.env.example backend/.env                 # Copernicus + Azure OpenAI credentials
+cp frontend/.env.local.example frontend/.env.local
+cp infra/.env.example infra/.env                      # optional: override default dev passwords
+```
+
+You need a free [Copernicus Data Space](https://dataspace.copernicus.eu/) account for satellite data and an Azure OpenAI deployment for the AI assistant.
 
 ### Step 3: Install Backend Dependencies
 
@@ -198,11 +206,11 @@ docker-compose -f infra/docker-compose.yml up -d
 ```
 
 This will start:
-- OpenSearch (Port 9200)
-- MinIO (Port 9001)
-- Keycloak (Port 8080)
-- TiTiler (Port 8082)
-- PostgreSQL (Port 5432)
+- OpenSearch (port 9200)
+- MinIO (API 9000, console 9001)
+- Keycloak (port 8080) with the `geo-platform` realm and dev users imported automatically
+- PostgreSQL for Keycloak (port 5432)
+- TiTiler (port 8082)
 
 ### Step 6: Verify Installation
 
@@ -212,7 +220,7 @@ Check that all containers are running:
 docker ps
 ```
 
-You should see 5-6 running containers. Wait 30-60 seconds for services to be fully initialized.
+You should see 5 running containers. Wait 30-60 seconds for services to be fully initialized.
 
 ---
 
@@ -220,7 +228,7 @@ You should see 5-6 running containers. Wait 30-60 seconds for services to be ful
 
 ### Using Task Runner (Recommended)
 
-If Task is installed, starting the entire development environment is simple:
+If [Task](https://taskfile.dev) is installed, starting the entire development environment is simple (the Task targets use PowerShell, so this path is Windows-only; use the manual setup below on macOS/Linux):
 
 ```bash
 # Start all services (Docker + Backend + Frontend)
@@ -255,9 +263,9 @@ npm run dev
 
 Once everything is set up, access the services via:
 
-| Service              | URL                            | Credentials                      |
+| Service              | URL                            | Credentials (dev only)           |
 |----------------------|--------------------------------|----------------------------------|
-| **Frontend**         | http://localhost:5173          | `testuser` / `test123`          |
+| **Frontend**         | http://localhost:5173          | see [Authentication](#authentication) |
 | **Backend API Docs** | http://localhost:8000/docs     | (Open access)                    |
 | **Keycloak Admin**   | http://localhost:8080/admin    | `admin` / `admin`                |
 | **MinIO Console**    | http://localhost:9001          | `admin` / `admin123`             |
@@ -268,16 +276,34 @@ Once everything is set up, access the services via:
 
 ## 🔐 Authentication
 
-### Default Test Users
+Login uses Keycloak's OIDC authorization-code flow. The backend validates JWTs against Keycloak's JWKS endpoint and maps realm roles to fine-grained permissions (e.g. `analysis:run`, `data:ingest`).
 
-The application comes with pre-configured test users:
+### Development users
 
-| Username   | Password   | Role            | Permissions                          |
-|------------|-----------|-----------------|--------------------------------------|
-| `admin`    | `admin`   | `SYSTEM_ADMIN`  | Full system access                   |
-| `testuser` | `test123` | `ANALYST`       | Read/analyze satellite data          |
+The Keycloak realm import (`infra/keycloak/import/realm-export.json`) creates these users:
 
-> **Note**: In production, users are managed through Keycloak. Static users are currently used for development.
+| Username         | Password    | Role             | Can                                       |
+|------------------|-------------|------------------|-------------------------------------------|
+| `adminuser`      | `admin123`  | `administrator`  | Everything                                |
+| `forestanalyzer` | `forest123` | `forest_analyst` | Run analyses, read scenes and regions     |
+| `datauser`       | `data123`   | `data_manager`   | Ingest and delete data, read scenes       |
+| `viewuser`       | `view123`   | `viewer`         | Read-only                                 |
+
+> ⚠️ All credentials in this repository (users above, `admin/admin` for the Keycloak console, `admin/admin123` for MinIO) are **local-development defaults only**. Override them via `infra/.env` for any shared or deployed environment. See [docs/USER_MANAGEMENT.md](docs/USER_MANAGEMENT.md) and [docs/RBAC_IMPLEMENTATION.md](docs/RBAC_IMPLEMENTATION.md).
+
+---
+
+## ✅ Running Tests
+
+```bash
+# Backend (pytest, ~35 tests incl. RBAC mapping and controller tests with mocked services)
+cd backend && pytest tests/ --cov=backend_app
+
+# Frontend (Vitest, ~100 tests for API clients, geo and role utilities) + lint + build
+cd frontend && npm run lint && npm test && npm run build
+```
+
+Or `task test` to run both. The same checks run in [GitHub Actions](.github/workflows/ci.yml) on every push. See [docs/TESTING.md](docs/TESTING.md) for the full test matrix.
 
 ---
 
@@ -285,18 +311,18 @@ The application comes with pre-configured test users:
 
 ### Backend API Endpoints
 
-- **Analysis**: `/api/v1/analysis` - Vegetation index calculations
-- **Chat Agent**: `/api/v1/chat` - AI-powered forest insights
-- **Sentinel Data**: `/api/v1/sentinel` - Satellite data retrieval
-- **Ingestion**: `/api/v1/ingest` - Data import pipeline
-- **Municipality**: `/api/v1/municipality` - Geographic boundaries
-- **Index**: `/api/v1/index` - Data indexing operations
+- **Ingestion**: `POST /ingest/stream` - Download and stack Sentinel-2 scenes, streaming progress (SSE)
+- **Analysis**: `POST /analysis/` - Vegetation-index analysis as a background job
+- **Municipality**: `GET /municipality/regions`, `/regions/geometry`, `/lookup` - Region hierarchy and boundaries
+- **Sentinel**: `GET /sentinel/fetch` - Scene search in the Copernicus STAC catalogue
+- **Chat**: `POST /chat` - LangChain AI agent
+- **Logs**: `POST /save-log`, `GET /logs/{id}` - Analysis logs in OpenSearch
 
-See full documentation at http://localhost:8000/docs
+Overview with permissions: [docs/api.md](docs/api.md). Interactive docs: http://localhost:8000/docs
 
 ### Database & Services
 
-- **OpenSearch**: Full-text search engine (http://localhost:9200)
+- **OpenSearch**: Scene metadata and logs (http://localhost:9200)
 - **MinIO**: S3-compatible object storage (http://localhost:9001)
 - **TiTiler**: Tile server for satellite imagery (http://localhost:8082)
 - **Keycloak**: Identity & Access Management (http://localhost:8080)
@@ -306,7 +332,9 @@ See full documentation at http://localhost:8000/docs
 ## 📖 Additional Documentation
 
 For detailed information, see:
-- [API Documentation](docs/api.md)
+- [API Overview](docs/api.md)
+- [Testing Strategy](docs/TESTING.md)
+- [Frontend README](frontend/README.md)
 - [Deployment Guide](docs/DEPLOYMENT.md)
 - [Security Audit](docs/SECURITY_AUDIT.md)
 - [RBAC Implementation](docs/RBAC_IMPLEMENTATION.md)

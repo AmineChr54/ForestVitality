@@ -157,8 +157,8 @@ def analyze(
 - `/analysis` - Protected: `analysis:run`
 - `/ingest` - Protected: `data:ingest`
 - `/municipality/lookup` - Protected: `regions:read`
-- `/sentinel/fetch` - TODO: Needs protection
-- `/save-log` - TODO: Needs protection
+- `/sentinel/fetch` - Protected: `scenes:read`
+- `/save-log`, `/logs/{id}` - Protected: `logs:create` / `logs:read`
 
 ---
 

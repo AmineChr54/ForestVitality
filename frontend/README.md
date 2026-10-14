@@ -1,269 +1,85 @@
-# VitalityForest Frontend 🌲
+# Forest Vitality – Frontend
 
-Waldgesundheits-Monitoring Dashboard mit Vegetationsindex-Analyse und KI-Insights.
+React + TypeScript dashboard for satellite-based forest health monitoring: select a German municipality or draw a region, compute vegetation indices (NDVI, NDMI, …) from Sentinel-2 imagery, compare two dates side by side, and ask the AI assistant about the results.
 
-## Quick Start
+The UI itself is in German.
+
+## Quick start
 
 ```bash
-# Dependencies installieren
 npm install
-
-# Environment Datei erstellen
-cp .env.example .env.local
-
-# Dev Server starten
-npm run dev
-
-# Build für Production
-npm run build
+cp .env.local.example .env.local   # adjust URLs if needed
+npm run dev                         # http://localhost:5173
 ```
 
-Öffne http://localhost:5173 und logge dich mit beliebiger E-Mail + 4+ Zeichen Passwort ein.
-
----
-
-## Environment Variables
-
-### Configuration
-
-Create a `.env.local` file in the `frontend/` directory (copy from `.env.example`):
-
-```env
-# API Configuration
-VITE_API_BASE_URL=http://localhost:8000
-
-# Map Configuration (OpenStreetMap default)
-VITE_MAP_TILE_URL=https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png
-
-# Sentinel API (optional - backend handles auth)
-VITE_SENTINEL_API_KEY=
-
-# Debug mode (enables console logging)
-VITE_DEBUG_MODE=true
-```
-
-### Variable Reference
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `VITE_API_BASE_URL` | Yes | `http://localhost:8000` | Backend API base URL |
-| `VITE_MAP_TILE_URL` | No | OpenStreetMap tiles | Map tile provider URL |
-| `VITE_SENTINEL_API_KEY` | No | (empty) | Sentinel Hub API key (if needed) |
-| `VITE_DEBUG_MODE` | No | `false` | Enable debug logging |
-
-### Environment-Specific Files
-
-- `.env.example` - Template with documentation (committed to git)
-- `.env.local` - Local development (gitignored)
-- `.env.production.local` - Production overrides (gitignored)
-
----
-
-## Tech Stack
-
-- **React 19** + TypeScript
-- **Vite** für schnelles Development
-- **React Router** mit Lazy Loading
-- **Leaflet** für Karten
-- **React Query** für Server State
-- **Zustand** für Client State
-- **Axios** für HTTP Requests
-
----
-
-## Projektstruktur
-
-```
-src/
-├── api/                 # API Layer
-│   ├── httpClient.ts    # Axios configuration with auth & error handling
-│   ├── healthApi.ts     # Health check endpoints
-│   ├── ingestApi.ts     # Data ingestion endpoints
-│   ├── sentinelApi.ts   # Sentinel satellite data endpoints
-│   └── municipalityApi.ts # Municipality lookup endpoints
-│
-├── components/          # Reusable UI components
-│   ├── ai/              # AiChatPanel, InsightCard
-│   ├── indexCalculator/ # IndexSelector, RunAnalysisButton
-│   ├── layout/          # Sidebar, Topbar
-│   └── map/             # MapView, DrawTools, IndexLegend
-│
-├── config/              # Configuration
-│   └── env.ts           # Type-safe environment variables
-│
-├── constants/           # App-wide constants
-│   ├── api.ts           # API endpoint definitions
-│   ├── routes.ts        # Route path definitions
-│   └── map.ts           # Map configuration
-│
-├── hooks/               # Custom React hooks
-│   ├── useAuth.ts       # Authentication logic
-│   ├── useAnalysis.ts   # Analysis operations
-│   └── ...
-│
-├── layouts/             # Page layout wrappers
-├── pages/               # Page components (routes)
-├── router/              # React Router Config
-├── state/               # State management
-│   └── authStore.ts     # Zustand auth store
-├── types/               # TypeScript type definitions
-└── utils/               # Utility functions
-    └── apiErrors.ts     # Error handling utilities
-```
-
----
-
-## HTTP Client & API Layer
-
-### Basic Usage
-
-```typescript
-import { httpClient } from '@/api/httpClient';
-import { checkHealth, ingestScenes } from '@/api';
-
-// Direct httpClient usage
-const response = await httpClient.get('/some-endpoint');
-
-// Using typed API functions
-const health = await checkHealth();
-const result = await ingestScenes({
-  bbox: [8.0, 49.0, 9.0, 50.0],
-  from_date: '2024-01-01',
-  to_date: '2024-01-31'
-});
-```
-
-### Features
-
-- **Auto Auth Token**: Tokens are automatically attached to requests
-- **401 Handling**: Automatic redirect to login on authentication failure
-- **Error Transformation**: Consistent error format across all API calls
-- **Type Safety**: Full TypeScript support for requests and responses
-
-### Error Handling
-
-```typescript
-import { parseApiError, getUserFriendlyMessage } from '@/utils/apiErrors';
-
-try {
-  await someApiCall();
-} catch (error) {
-  const appError = parseApiError(error);
-  
-  if (appError.requiresAuth) {
-    // User will be redirected to login automatically
-    return;
-  }
-  
-  // Show user-friendly message
-  showToast(appError.message);
-  
-  // Or get just the message
-  const message = getUserFriendlyMessage(error);
-}
-```
-
-### Error Codes
-
-| Status | Code | Default Message (DE) |
-|--------|------|---------------------|
-| 400 | `BAD_REQUEST` | Die Anfrage war ungültig |
-| 401 | `UNAUTHORIZED` | Ihre Sitzung ist abgelaufen |
-| 403 | `FORBIDDEN` | Keine Berechtigung |
-| 404 | `NOT_FOUND` | Ressource nicht gefunden |
-| 500 | `SERVER_ERROR` | Serverfehler aufgetreten |
-| - | `NETWORK_ERROR` | Keine Verbindung zum Server |
-
----
-
-## Authentication
-
-Authentication state is managed via Zustand with localStorage persistence.
-
-```typescript
-import { useAuthStore } from '@/state/authStore';
-
-// In React components
-const { token, isAuthenticated, setToken, logout } = useAuthStore();
-
-// Outside React (e.g., in httpClient)
-import { getAuthToken, clearAuth } from '@/state/authStore';
-const token = getAuthToken();
-```
-
-### Auth Flow
-
-1. User logs in → token stored in Zustand → persisted to localStorage
-2. On app start → token rehydrated from localStorage
-3. On 401 response → auth cleared → redirect to `/login`
-4. On logout → auth cleared → localStorage cleaned
-
----
-
-## Für F2: Hooks ersetzen
-
-Die aktuellen Hooks in `src/hooks/` sind **Mocks** für UI-Entwicklung. Ersetze sie mit React Query:
-
-| Mock Hook | Zu ersetzen mit |
-|-----------|-----------------| 
-| `useAuth` | Keep mock or integrate with backend auth |
-| `useRegions` | `useQuery` / `useMutation` für `/api/regions` |
-| `useAnalysis` | `useQuery` / `useMutation` für `/api/analysis` |
-| `useSentinelImages` | `useQuery` mit `sentinelApi.ts` |
-| `useAiInsights` | `useMutation` für `/api/ai/insights` |
-
-**Interface beibehalten!** Die Pages erwarten diese Rückgabewerte:
-```typescript
-// useRegions soll zurückgeben:
-{ regions, isLoading, selectedRegion, selectRegion, createRegion, deleteRegion }
-
-// useAnalysis soll zurückgeben:
-{ results, currentJob, isLoading, runAnalysis, getResultsByRegion }
-```
-
----
+The backend, Keycloak and TiTiler must be running (see the [root README](../README.md)). Log in with one of the development users (e.g. `forestanalyzer` / `forest123`).
 
 ## Scripts
 
-| Command | Beschreibung |
+| Command | Description |
 |---------|-------------|
-| `npm run dev` | Dev Server auf port 5173 |
-| `npm run build` | Production Build |
-| `npm run lint` | ESLint prüfen |
-| `npm run preview` | Production Build lokal testen |
+| `npm run dev` | Vite dev server on port 5173 (proxies `/titiler` → `localhost:8082`) |
+| `npm run build` | Type-check (`tsc -b`) and production build |
+| `npm run lint` | ESLint (typescript-eslint, React Hooks rules) |
+| `npm test` | Vitest unit tests (jsdom) |
+| `npm run preview` | Serve the production build locally |
 
----
+## Tech stack
 
-## Backend Integration
+- **React 18** + TypeScript, **Vite**
+- **React Router** with lazy-loaded pages
+- **Leaflet** for maps; TiTiler COG tiles clipped client-side to the selected region on a canvas layer
+- **Zustand** for client state (auth session, map selection)
+- **Axios** HTTP client with auth and error interceptors
+- **Keycloak** (OIDC authorization-code flow) for authentication and role-based UI
 
-### Available Endpoints
+## Environment variables
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Basic health check |
-| `/os-health` | GET | OpenSearch health |
-| `/ingest/` | POST | Ingest satellite data |
-| `/sentinel/fetch` | GET | Fetch Sentinel scenes |
-| `/municipality/lookup` | GET | Look up municipality |
-| `/save-log` | POST | Save log entry |
-| `/logs/{id}` | GET | Get log by ID |
+Defined in `.env.local` (template: `.env.local.example`; production template: `.env.production.example`).
 
-### CORS
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VITE_API_BASE_URL` | `http://localhost:8000` | Backend API base URL |
+| `VITE_APP_BASE_URL` | `http://localhost:5173` | Frontend origin, used for the Keycloak redirect |
+| `VITE_KEYCLOAK_URL` | `http://localhost:8080` | Keycloak server |
+| `VITE_KEYCLOAK_REALM` | `geo-platform` | Keycloak realm |
+| `VITE_KEYCLOAK_CLIENT_ID` | `geo-platform-backend` | Keycloak client |
+| `VITE_TITILER_URL` | `http://localhost:8082` | TiTiler tile server |
+| `VITE_MAP_TILE_URL` | OpenStreetMap | Base-map tile URL |
+| `VITE_DEBUG_MODE` | `false` | Log HTTP requests and env config to the console |
 
-The backend must allow CORS from the frontend origin. In development:
-- Frontend: `http://localhost:5173`
-- Backend: `http://localhost:8000`
+## Project structure
 
----
+```
+src/
+├── api/          # Typed API clients (httpClient, ingest SSE stream, municipality, chat, TiTiler stats)
+├── components/   # UI: map (MapView, DrawTools, legend), index calculator, region search, AI chat widget
+├── config/       # Type-safe environment config
+├── constants/    # Routes, map config, band-math expressions
+├── hooks/        # useAnalysis (SSE ingestion + results), useRegionSearch, useAuth, …
+├── layouts/      # Main layout (sidebar + topbar)
+├── pages/        # Region select, index analysis, split comparison, AI insights, login
+├── router/       # Route config with Suspense helpers
+├── security/     # Keycloak integration: domain model, token service, route guard
+├── state/        # Zustand stores (auth, map)
+├── types/        # Shared TypeScript types
+└── utils/        # Geo helpers, API error mapping, role helpers, SSE client
+tests/            # Vitest tests for API clients and utilities
+```
 
-## Bekannte Limitierungen
+## How an analysis runs
 
-- **DrawTools**: Demo-Modus - generiert Mock-Polygone. Für echtes Zeichnen → `leaflet-draw` Plugin integrieren
-- **Analysis Overlay**: Kein echtes Raster-Overlay, nur Indikator. Braucht GeoTIFF-Rendering
-- **Auth**: localStorage Mock - Production braucht echte JWT-Auth mit Backend
+1. The user picks a municipality (or draws a polygon) and an index, resolution and date.
+2. `useAnalysis` splits MultiPolygons into sub-regions (`utils/geoUtils.splitIntoSubRegions`) and opens a Server-Sent Events stream to `POST /ingest/stream` for each one.
+3. The backend downloads the Sentinel-2 bands from Copernicus, stacks them into a Cloud-Optimized GeoTIFF in MinIO and streams progress events.
+4. `MapView` renders the index via TiTiler band-math tiles, clipped to the region geometry, and `fetchVitalityStatistics` computes mean/min/max for the region.
 
----
+## Authentication
 
-## Lizenz
+`security/` wraps Keycloak's authorization-code flow: the login page redirects to Keycloak, `AuthCallback` exchanges the code for tokens, and `SecurityService` stores and auto-refreshes them. The Axios interceptor attaches the bearer token and redirects to `/login` on `401`. Actions are gated by the user's Keycloak roles (`utils/roleUtils`, e.g. only analysts and admins can run analyses).
 
-Internes Projekt - VitalityForest Team
+## Known limitations
+
+- **AI Insights page** uses a placeholder hook (`useAiInsights`) with canned answers. The live LangChain agent is reached through the floating chat widget (`ChatWidget` → `POST /chat`).
+- **Custom regions** drawn by the user are stored in the browser's `localStorage` only.
+- The region statistics card is computed on demand via TiTiler; results are not persisted.

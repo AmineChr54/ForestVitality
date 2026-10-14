@@ -1,5 +1,5 @@
-// AI Insights Hook - Mock Implementation
-// TODO: F2 should replace with React Query implementation
+// AI Insights Hook - placeholder with canned responses for the Insights page.
+// The live LangChain agent is used by the chat widget (ChatWidget -> POST /chat).
 
 import { useState, useCallback } from 'react';
 

@@ -22,9 +22,8 @@ tasks:
         Write-Host '  Forest Vitality - Development Services'
         Write-Host '==================================================='
         Write-Host ''
-        Write-Host '  Frontend:        http://localhost:5173        (User: adminuser, Pass: admin123)'
+        Write-Host '  Frontend:        http://localhost:5173        (dev user: adminuser / admin123)'
         Write-Host '  Backend API:     http://localhost:8000/docs'
-        Write-Host '  Token Generator: http://localhost:8000/token-generator'
         Write-Host '  Keycloak:        http://localhost:8080        (User: admin, Pass: admin)'
         Write-Host '  OpenSearch:      http://localhost:9200        (Use DBeaver to visualize)'
         Write-Host '  MinIO Console:   http://localhost:9001        (User: admin, Pass: admin123)'
@@ -41,7 +40,7 @@ tasks:
   backend:
     desc: Start backend server
     dir: backend
-    cmd: powershell -Command "..\.venv\Scripts\Activate.ps1; uvicorn backend_app.main:app --reload --host 0.0.0.0 --port 8000"
+    cmd: powershell -Command ".\.venv\Scripts\Activate.ps1; uvicorn backend_app.main:app --reload --host 0.0.0.0 --port 8000"
 
   frontend:
     desc: Start frontend dev server
@@ -51,7 +50,7 @@ tasks:
   test:backend:
     desc: Run backend tests (pytest)
     dir: backend
-    cmd: powershell -Command "..\.venv\Scripts\Activate.ps1; pytest tests/ -q --tb=short"
+    cmd: powershell -Command ".\.venv\Scripts\Activate.ps1; pytest tests/ -q --tb=short"
 
   test:frontend:
     desc: Run frontend tests (vitest)

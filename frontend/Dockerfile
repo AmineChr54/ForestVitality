@@ -1,10 +1,10 @@
 # Build stage
-FROM node:18-alpine as builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --ignore-scripts
 
 COPY . .
 RUN npm run build

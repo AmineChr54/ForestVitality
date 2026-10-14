@@ -1,5 +1,4 @@
-// Map Constants - Placeholder
-// TODO: Define map configuration constants
+// Map configuration and TiTiler band-math expressions per vegetation index
 
 export const MAP_CONFIG = {
   DEFAULT_CENTER: [51.1657, 10.4515] as [number, number], // Germany center

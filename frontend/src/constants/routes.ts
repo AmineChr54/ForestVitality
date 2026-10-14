@@ -1,5 +1,4 @@
-// Route Constants - Placeholder
-// TODO: Define all application routes as constants
+// Application route paths
 
 export const ROUTES = {
   HOME: '/',

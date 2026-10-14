@@ -1,5 +1,4 @@
-// Regions Hook - Mock Implementation with localStorage persistence
-// TODO: F2 should replace with React Query implementation
+// Regions Hook - user-drawn regions, persisted client-side in localStorage
 
 import { useState, useCallback, useEffect } from 'react';
 import type { Region, CreateRegionInput, GeoJSONPolygon } from '../types';

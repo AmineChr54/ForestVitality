@@ -6,7 +6,7 @@ This document summarizes the automated test approach for the Forest Vitality pro
 
 - Verify critical API and security behavior automatically.
 - Keep tests deterministic without requiring external cloud services.
-- Make coverage easy to understand for project evaluation.
+- Keep the test matrix easy to scan, so gaps in coverage are obvious.
 
 ## Test Types
 
@@ -98,7 +98,7 @@ Pure-function tests with no network calls.
   - `frontend/tests/utils/apiErrors.test.ts`
 - Role checking (all Keycloak alias variants), permission helpers, German display names:
   - `frontend/tests/utils/roleUtils.test.ts`
-- GeoJSON bounding-box calculation (Polygon, MultiPolygon, Point):
+- GeoJSON bounding-box calculation and splitting into per-polygon sub-regions:
   - `frontend/tests/utils/geoUtils.test.ts`
 - Chat-message markdown formatting fixes:
   - `frontend/tests/utils/chatUtils.test.ts`
@@ -277,10 +277,10 @@ task test
 | R49 | 401 triggers clearAuth + redirect to /login | Frontend | Unit | `frontend/tests/api/httpClient.test.ts` | Yes |
 | R50 | Non-401 HTTP errors → AppError shape | Frontend | Unit | `frontend/tests/api/httpClient.test.ts` | Yes |
 | R51 | HTTP client configured (baseURL, timeout, headers) | Frontend | Unit | `frontend/tests/api/httpClient.test.ts` | Yes |
-| R52 | Frontend tests run in GitLab CI pipeline | Infra | CI | `.gitlab-ci.yml` → `test:frontend` | Yes |
+| R52 | Lint, tests and build run in CI on every push | Infra | CI | `.github/workflows/ci.yml` | Yes |
 - Assertions focus on user-visible behavior (status codes, response payloads, permission effects).
 
 ## Notes
 
-- Existing script-based checks under `scripts/` are useful for manual diagnostics but are not a replacement for automated pytest suites.
+- The helpers under `scripts/` are for local operations (ingestion, MinIO maintenance, user setup), not tests.
 - Additional endpoint suites can be added incrementally in `backend/tests/controllers/` using the same fixture and mocking approach.

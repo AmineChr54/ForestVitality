@@ -16,7 +16,7 @@ The `realm-export.json` file contains:
   - `adminuser` / `admin123` (administrator role)
   - `testuser` / `test123` (forest_analyst role)
 
-## 🚀 How to Use (Team Members)
+## 🚀 How to Use
 
 ### First Time Setup
 
