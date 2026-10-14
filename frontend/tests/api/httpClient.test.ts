@@ -13,14 +13,11 @@
  *  - 401 → clearAuth() called + redirect to /login
  *  - 401 on a public route → NO redirect (avoid loop)
  *  - 4xx/5xx → rejected with AppError shape
- *
- *  CONVENIENCE WRAPPERS
- *  - get / post / put / patch / del return response.data
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import axios from 'axios';
-import type { AxiosInstance } from 'axios';
+import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
 // ── We must mock the dependencies BEFORE importing httpClient ────────
 // Mock authStore
@@ -40,7 +37,8 @@ vi.mock('../../src/config', () => ({
 
 // Now import the things we mocked + the module under test
 import { getAuthToken, clearAuth } from '../../src/state/authStore';
-import { httpClient, get, post, put, patch, del } from '../../src/api/httpClient';
+import { httpClient } from '../../src/api/httpClient';
+import type { AppError } from '../../src/utils/apiErrors';
 
 // ── helpers ──────────────────────────────────────────────────────────
 /** Shorthand to get the mocked function for assertions. */
@@ -69,7 +67,7 @@ describe('request interceptor – token attachment', () => {
     const config = await (httpClient as AxiosInstance).interceptors.request.handlers[0].fulfilled({
       url: '/api/v1/regions',
       headers: new axios.AxiosHeaders(),
-    } as any);
+    } as InternalAxiosRequestConfig);
 
     expect(config.headers.Authorization).toBe('Bearer my-jwt-token');
   });
@@ -80,7 +78,7 @@ describe('request interceptor – token attachment', () => {
     const config = await (httpClient as AxiosInstance).interceptors.request.handlers[0].fulfilled({
       url: '/health',
       headers: new axios.AxiosHeaders(),
-    } as any);
+    } as InternalAxiosRequestConfig);
 
     expect(config.headers.Authorization).toBeUndefined();
   });
@@ -91,7 +89,7 @@ describe('request interceptor – token attachment', () => {
     const config = await (httpClient as AxiosInstance).interceptors.request.handlers[0].fulfilled({
       url: '/auth/login',
       headers: new axios.AxiosHeaders(),
-    } as any);
+    } as InternalAxiosRequestConfig);
 
     expect(config.headers.Authorization).toBeUndefined();
   });
@@ -102,7 +100,7 @@ describe('request interceptor – token attachment', () => {
     const config = await (httpClient as AxiosInstance).interceptors.request.handlers[0].fulfilled({
       url: '/api/v1/regions',
       headers: new axios.AxiosHeaders(),
-    } as any);
+    } as InternalAxiosRequestConfig);
 
     expect(config.headers.Authorization).toBeUndefined();
   });
@@ -158,7 +156,8 @@ describe('response interceptor – error handling', () => {
     try {
       await handler(fakeAxiosError(403, '/api/v1/admin'));
       expect.unreachable('should have thrown');
-    } catch (err: any) {
+    } catch (caught) {
+      const err = caught as AppError;
       expect(err.code).toBe('FORBIDDEN');
       expect(err.status).toBe(403);
       expect(err.requiresAuth).toBe(false);
@@ -171,7 +170,8 @@ describe('response interceptor – error handling', () => {
     try {
       await handler(fakeAxiosError(500, '/api/v1/data'));
       expect.unreachable('should have thrown');
-    } catch (err: any) {
+    } catch (caught) {
+      const err = caught as AppError;
       expect(err.code).toBe('SERVER_ERROR');
       expect(err.status).toBe(500);
     }

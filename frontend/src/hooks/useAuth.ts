@@ -10,7 +10,8 @@ interface UseAuthReturn {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (credentials: LoginCredentials) => Promise<void>;
+  /** Starts the Keycloak redirect flow; credentials are entered on the Keycloak page. */
+  login: (credentials?: LoginCredentials) => Promise<void>;
   logout: () => void;
   checkAuth: () => void;
 }
@@ -20,7 +21,7 @@ export const useAuth = (): UseAuthReturn => {
     SecurityAPI.getAuthState()
   );
 
-  const login = useCallback(async (_credentials: LoginCredentials) => {
+  const login = useCallback(async () => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
@@ -29,11 +30,11 @@ export const useAuth = (): UseAuthReturn => {
 
       // Redirect happens, but keeping this line is fine
       setState(SecurityAPI.getAuthState());
-    } catch (err: any) {
+    } catch (err) {
       setState({
         ...SecurityAPI.getAuthState(),
         isLoading: false,
-        error: err?.message ?? "Login failed",
+        error: err instanceof Error ? err.message : "Login failed",
       });
     }
   }, []);

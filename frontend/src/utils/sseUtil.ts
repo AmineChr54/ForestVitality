@@ -10,14 +10,23 @@ import { getAuthToken, clearAuth } from '../state/authStore';
 export interface SSEParsedEvent {
     type: string;
     timestamp?: number;
-    [key: string]: any;
+    /* Known payload fields emitted by the ingestion stream */
+    message?: string;
+    scene_id?: string;
+    scene_path?: string;
+    scene_bytes?: number;
+    total_bytes?: number;
+    total_expected?: number;
+    suggested_date?: string;
+    original_date?: string;
+    [key: string]: unknown;
 }
 
 export interface SSEOptions {
     method?: 'GET' | 'POST';
-    body?: any;
+    body?: unknown;
     onMessage: (event: SSEParsedEvent) => void;
-    onError?: (error: any) => void;
+    onError?: (error: unknown) => void;
     onClose?: () => void;
     signal?: AbortSignal;
 }

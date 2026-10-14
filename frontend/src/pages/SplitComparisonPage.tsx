@@ -1,8 +1,9 @@
 // Split Comparison Page Component - Compare same index across two dates for one region
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRegionSearch, useAnalysis } from '../hooks';
 import { useAuth } from '../hooks';
 import { canAnalyze } from '../utils/roleUtils';
+import { splitIntoSubRegions } from '../utils/geoUtils';
 import { MapView } from '../components/map/MapView';
 import { IndexSelector } from '../components/indexCalculator/IndexSelector';
 import { ResolutionSelector } from '../components/indexCalculator/ResolutionSelector';
@@ -55,76 +56,32 @@ const SplitComparisonPage = () => {
     });
 
     // Completed results (extracted from hooks on completion)
-    const [leftResult, setLeftResult] = useState<AnalysisResult | null>(null);
-    const [rightResult, setRightResult] = useState<AnalysisResult | null>(null);
+    // Number of results each side had when the current comparison started;
+    // only results newer than that are shown (derived, no syncing effect needed)
+    const [resultBaseline, setResultBaseline] = useState({ left: 0, right: 0 });
+    const leftResult: AnalysisResult | null =
+        leftAnalysis.results.length > resultBaseline.left ? leftAnalysis.results[0] : null;
+    const rightResult: AnalysisResult | null =
+        rightAnalysis.results.length > resultBaseline.right ? rightAnalysis.results[0] : null;
 
     // Trigger for auto-zoom on run
     const [zoomTrigger, setZoomTrigger] = useState(0);
 
-    // Auto-correct resolution when index changes
-    useEffect(() => {
-        const info = INDEX_INFO[selectedIndex];
+    // Switching index also snaps the resolution to one the index supports (e.g. NDMI is 20m only)
+    const handleIndexChange = (index: VegetationIndex) => {
+        setSelectedIndex(index);
+        const info = INDEX_INFO[index];
         if (!info.availableResolutions.includes(selectedResolution)) {
             setSelectedResolution(info.defaultResolution);
         }
-    }, [selectedIndex, selectedResolution]);
-
-    // Watch for completed results from the analysis hooks
-    useEffect(() => {
-        if (leftAnalysis.results.length > 0) {
-            setLeftResult(leftAnalysis.results[0]);
-        }
-    }, [leftAnalysis.results]);
-
-    useEffect(() => {
-        if (rightAnalysis.results.length > 0) {
-            setRightResult(rightAnalysis.results[0]);
-        }
-    }, [rightAnalysis.results]);
+    };
 
     const userCanAnalyze = canAnalyze(user);
     const regionId = selectedRegion ? `${selectedRegion.type}-${selectedRegion.name}` : null;
 
-    // Process geometry into sub-regions (same logic as IndexAnalysisPage)
-    const getSubRegions = () => {
-        if (!selectedRegion?.bbox) return [];
-
-        let subRegions: { bbox: [number, number, number, number]; geometry: any }[] = [];
-
-        const processGeometry = (geo: any) => {
-            if (geo.type === 'Polygon') {
-                const ring = geo.coordinates[0];
-                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                ring.forEach((p: any) => {
-                    const [x, y] = p;
-                    minX = Math.min(minX, x);
-                    minY = Math.min(minY, y);
-                    maxX = Math.max(maxX, x);
-                    maxY = Math.max(maxY, y);
-                });
-                subRegions.push({ bbox: [minX, minY, maxX, maxY], geometry: geo });
-            } else if (geo.type === 'MultiPolygon') {
-                geo.coordinates.forEach((coords: any) => {
-                    processGeometry({ type: 'Polygon', coordinates: coords });
-                });
-            } else if (geo.type === 'GeometryCollection') {
-                if (geo.geometries && Array.isArray(geo.geometries)) {
-                    geo.geometries.forEach((g: any) => processGeometry(g));
-                }
-            }
-        };
-
-        if (selectedGeometry) {
-            processGeometry(selectedGeometry);
-            if (subRegions.length === 0) {
-                subRegions = [{ bbox: selectedRegion.bbox, geometry: selectedGeometry }];
-            }
-        } else {
-            subRegions = [{ bbox: selectedRegion.bbox, geometry: selectedGeometry }];
-        }
-
-        return subRegions;
-    };
+    // Split the selection into one sub-region per polygon
+    const getSubRegions = () =>
+        selectedRegion?.bbox ? splitIntoSubRegions(selectedGeometry, selectedRegion.bbox) : [];
 
     const handleRunComparison = async () => {
         if (!selectedRegion?.bbox || !regionId) return;
@@ -133,8 +90,7 @@ const SplitComparisonPage = () => {
         setZoomTrigger(prev => prev + 1);
 
         // Clear previous results
-        setLeftResult(null);
-        setRightResult(null);
+        setResultBaseline({ left: leftAnalysis.results.length, right: rightAnalysis.results.length });
 
         const subRegions = getSubRegions();
 
@@ -239,7 +195,7 @@ const SplitComparisonPage = () => {
                         <label className="control-label">Vegetationsindex</label>
                         <IndexSelector
                             selectedIndex={selectedIndex}
-                            onSelect={setSelectedIndex}
+                            onSelect={handleIndexChange}
                         />
                     </div>
 

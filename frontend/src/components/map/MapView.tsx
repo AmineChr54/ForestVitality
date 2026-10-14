@@ -58,6 +58,11 @@ export const MapView = ({
   zoomTrigger,
 }: MapViewProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
+  // Latest selectedBbox for async callbacks inside the one-time map setup
+  const selectedBboxRef = useRef(selectedBbox);
+  useEffect(() => {
+    selectedBboxRef.current = selectedBbox;
+  }, [selectedBbox]);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const regionsLayerRef = useRef<L.LayerGroup | null>(null);
   const selectedLayerRef = useRef<L.LayerGroup | null>(null);
@@ -132,7 +137,8 @@ export const MapView = ({
         const feature = data.features ? data.features[0] : data;
         const geometry = feature.geometry;
 
-        let polygons: any[] = [];
+        // Each polygon is a list of rings; each ring a list of [lng, lat] positions
+        let polygons: number[][][][] = [];
         if (geometry.type === 'MultiPolygon') {
           polygons = geometry.coordinates;
         } else if (geometry.type === 'Polygon') {
@@ -141,13 +147,13 @@ export const MapView = ({
 
         // Prepare holes (Germany bounds)
         // GeoJSON is [lng, lat], Leaflet needs [lat, lng]
-        const holes = polygons.map((poly: any[]) => {
+        const holes = polygons.map((poly) =>
           // poly[0] is the outer ring
-          return poly[0].map((coord: number[]) => [coord[1], coord[0]]);
-        });
+          poly[0].map(([lng, lat]) => [lat, lng] as L.LatLngTuple)
+        );
 
         // World polygon (Clockwise)
-        const worldCoords = [
+        const worldCoords: L.LatLngTuple[] = [
           [90, -180],
           [90, 180],
           [-90, 180],
@@ -157,7 +163,7 @@ export const MapView = ({
         // Combine: [World, Hole1, Hole2, ...]
         const maskCoords = [worldCoords, ...holes];
 
-        L.polygon(maskCoords as any, {
+        L.polygon(maskCoords, {
           color: 'transparent',
           fillColor: '#000000', // Black
           fillOpacity: 0.5,     // Subtle darkening
@@ -165,11 +171,8 @@ export const MapView = ({
           interactive: false
         }).addTo(map);
 
-        console.log('Germany mask loaded successfully');
       })
       .catch((err) => console.error('Failed to load Germany mask:', err));
-
-    console.log('Map locked to Germany (Zoom 6+)', bounds);
 
     // Force refresh size after mount to handle layout issues
     setTimeout(() => {
@@ -178,7 +181,7 @@ export const MapView = ({
         try {
           map.invalidateSize();
           // Only fit to default bounds if NO specific bbox is selected
-          if (bounds.isValid() && !selectedBbox) {
+          if (bounds.isValid() && !selectedBboxRef.current) {
             map.fitBounds(bounds);
           }
         } catch (e) {
@@ -395,8 +398,6 @@ export const MapView = ({
 
     if (overlaysToRender.length === 0) return;
 
-    console.log('[TiTiler Debug] Rendering', overlaysToRender.length, 'overlay(s)');
-
     // Factory function to create a ClippedTileLayer with proper closure binding
     const createClippedLayer = (tileUrl: string, polygons: [number, number][][]) => {
       // ... (Keep existing factory function code exactly as is)
@@ -418,14 +419,11 @@ export const MapView = ({
           ctx.imageSmoothingEnabled = true;
           // tile.style.imageRendering = 'pixelated'; // Removed for smoother look
 
-
           const scale = renderSize / tileSize.x;
           const nwPoint = L.point(coords.x * tileSize.x, coords.y * tileSize.y);
 
-          // Pre-calculate all clip points and check if ANY point is within tile bounds
+          // Project every polygon vertex into this tile's pixel space for clipping
           const clipPoints: Array<{ x: number, y: number, polygon: number }> = [];
-          let hasPointInTile = false;
-          let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
 
           for (let pIdx = 0; pIdx < polygons.length; pIdx++) {
             const polygon = polygons[pIdx];
@@ -434,54 +432,7 @@ export const MapView = ({
               const x = (point.x - nwPoint.x) * scale;
               const y = (point.y - nwPoint.y) * scale;
               clipPoints.push({ x, y, polygon: pIdx });
-
-              minX = Math.min(minX, x);
-              maxX = Math.max(maxX, x);
-              minY = Math.min(minY, y);
-              maxY = Math.max(maxY, y);
-
-              if (x >= 0 && x <= renderSize && y >= 0 && y <= renderSize) {
-                hasPointInTile = true;
-              }
             }
-          }
-
-          // Check intersection
-          const polygonIntersectsTile = hasPointInTile ||
-            (maxX >= 0 && minX <= renderSize && maxY >= 0 && minY <= renderSize);
-
-          // DEBUG: Log intersection check failures for a specific tile to debug
-          if (Math.random() < 0.05 && polygonIntersectsTile) {
-            console.log(`[TiTiler Debug] Loading Tile ${coords.z}/${coords.x}/${coords.y} (Valid Intersection)`);
-          } else if (Math.random() < 0.001 && !polygonIntersectsTile) {
-            console.log(`[TiTiler Debug] Skipped Tile ${coords.z}/${coords.x}/${coords.y} (No Intersection)`);
-          }
-
-          // DEBUG: Temporarily COMMENT OUT the early return to force tiles to try loading
-          // console.log(`[Tile ${coords.z}/${coords.x}/${coords.y}] Intersects: ${polygonIntersectsTile}`);
-
-          // DEBUG: Temporarily COMMENT OUT the early return to force tiles to try loading
-          // This will confirm if the issue is the intersection logic or the network/URL
-          /*
-          if (!polygonIntersectsTile) {
-            done(undefined, tile);
-            return tile;
-          }
-          */
-          // Force it to true for now (if it was false, we just won't clip effectively? 
-          // No, if it was false, we still need to load the image to see it if our math is wrong)
-          // Actually if we assume logic is wrong, and we proceed, we do:
-          // drawImage -> clip. If clipPoints are "wrong" (offscreen), we clip everything out?
-          // If the math is wrong such that minX/maxX are way off, then clipPoints are also way off.
-          // So "clipping" will Result in empty canvas anyway.
-
-          // But let's see closer...
-          // If map.project is wrong, clipPoints will be wrong.
-
-          // Let's add a LOG here to see if we ever reach this point
-          // limit logs
-          if (Math.random() < 0.01) {
-            console.log('[TileDebug] Processing tile', coords, 'Overlay Polygons:', polygons.length, 'Intersects:', polygonIntersectsTile);
           }
 
           const img = new Image();
@@ -539,18 +490,12 @@ export const MapView = ({
     };
 
     // Iterate through EACH result (sub-region or main) and render its layers
-    overlaysToRender.forEach((overlay, idx) => {
+    overlaysToRender.forEach((overlay) => {
       const scenePaths = overlay.scenePaths || (overlay.scenePath ? [overlay.scenePath] : []);
       const expression = EXPRESSIONS[overlay.indexType];
 
-      console.log(`[TiTiler Debug] Overlay #${idx + 1}:`, {
-        index: overlay.indexType,
-        scenes: scenePaths.length,
-        hasGeometry: !!overlay.geometry
-      });
-
       if (scenePaths.length === 0 || !expression) {
-        console.warn('[TiTiler Debug] Skipping overlay - no scenes or expression');
+        console.warn('[MapView] Skipping overlay - no scenes or expression');
         return;
       }
 
@@ -593,8 +538,6 @@ export const MapView = ({
         }
       }
 
-      console.log(`[TiTiler Debug] Clipping Overlay #${idx + 1} with ${clipPolygons.length} polygons`);
-
       const encodedExpr = encodeURIComponent(expression);
 
       for (const scenePath of scenePaths) {
@@ -604,11 +547,6 @@ export const MapView = ({
           `&expression=${encodedExpr}` +
           `&rescale=-1,1` +
           `&colormap_name=${COLORMAPS[overlay.indexType] || 'rdylgn'}`;
-
-        // Log the first generated URL template for debugging
-        if (idx === 0) {
-          console.log('[TiTiler Debug] Tile URL Template:', tileUrlTemplate);
-        }
 
         if (clipPolygons.length === 0) {
           L.tileLayer(tileUrlTemplate, { opacity: 0.9, maxZoom: 24 }).addTo(overlayLayer);
@@ -635,13 +573,10 @@ export const MapView = ({
     const overlayLayer = overlayLayerRef.current;
     if (!overlayLayer) return;
 
-    overlayLayer.eachLayer((layer: any) => {
-      if (layer.setOpacity) {
-        // Standard TileLayer
+    overlayLayer.eachLayer((layer) => {
+      if (layer instanceof L.GridLayer) {
+        // TileLayer and the custom canvas ClippedTileLayer both extend GridLayer
         layer.setOpacity(overlayOpacity);
-      } else if (layer._container) {
-        // Custom canvas GridLayer (ClippedTileLayer)
-        layer._container.style.opacity = String(overlayOpacity);
       }
     });
   }, [overlayOpacity]);

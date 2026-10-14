@@ -6,22 +6,22 @@ import { SecurityConfig } from "../../SecurityConfig";
 export function AuthCallback() {
   const navigate = useNavigate();
   const handledRef = useRef(false);
-  const [status, setStatus] = useState<string>("Signing you in...");
+  // The authorization code is fixed for the lifetime of this page
+  const [code] = useState(() => new URLSearchParams(window.location.search).get("code"));
+  const [status, setStatus] = useState<string>(() =>
+    code ? "Exchanging code for token..." : "No authentication code found. Redirecting..."
+  );
 
   useEffect(() => {
+    if (!code) {
+      const timer = setTimeout(() => navigate(SecurityConfig.routes.loginPath, { replace: true }), 2000);
+      return () => clearTimeout(timer);
+    }
+
+    // Authorization codes are single-use: guard against StrictMode's double effect run
     if (handledRef.current) return;
     handledRef.current = true;
 
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-
-    if (!code) {
-      setStatus("No authentication code found. Redirecting...");
-      setTimeout(() => navigate(SecurityConfig.routes.loginPath, { replace: true }), 2000);
-      return;
-    }
-
-    setStatus("Exchanging code for token...");
     SecurityAPI.handleCallback(code)
       .then((result) => {
         if (result.isSuccess()) {
@@ -32,12 +32,12 @@ export function AuthCallback() {
           console.error("Auth callback failed:", result.message);
         }
       })
-      .catch((err) => {
-        const msg = err?.message || "Unknown error";
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : "Unknown error";
         setStatus(`System error: ${msg}`);
         console.error("Auth callback crashed:", err);
       });
-  }, [navigate]);
+  }, [code, navigate]);
 
   return (
     <div style={{

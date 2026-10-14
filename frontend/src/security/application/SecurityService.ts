@@ -10,7 +10,7 @@ export class SecurityService {
   private user: User | null = null;
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
-  private refreshTimer: any = null;
+  private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     const storedToken = localStorage.getItem(SecurityConfig.tokenKey);
@@ -99,7 +99,6 @@ export class SecurityService {
       }
 
       // Debug log
-      console.log("[Security] Token refreshed automatically ✅");
 
       this.scheduleRefresh();
       return true;

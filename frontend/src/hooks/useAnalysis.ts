@@ -35,7 +35,7 @@ export const useAnalysis = (): UseAnalysisReturn => {
     } | null>(null);
 
     const abortControllerRef = useRef<AbortController | null>(null);
-    const scenesRef = useRef<any[]>([]); // Temp store for scenes during ingestion
+    const scenesRef = useRef<Array<{ scene_id?: string; scene_path?: string }>>([]); // scene_complete payloads collected during ingestion
 
     const cancelAnalysis = useCallback(() => {
         if (abortControllerRef.current) {
@@ -82,7 +82,6 @@ export const useAnalysis = (): UseAnalysisReturn => {
         }
 
         const bbox = request.bbox;
-        console.log('[Analysis] Using bbox:', bbox, 'for date:', request.startDate);
 
         try {
             const controller = ingestScenesStream(
@@ -104,7 +103,7 @@ export const useAnalysis = (): UseAnalysisReturn => {
                             progress = 1;
                         } else if (type === 'download_progress') {
                             // payload: { scene_bytes, total_bytes, total_expected }
-                            const { total_bytes, total_expected } = payload;
+                            const { total_bytes = 0, total_expected = 0 } = payload;
 
                             // Calculate percentage based on total expected bytes
                             if (total_expected > 0) {
@@ -115,7 +114,10 @@ export const useAnalysis = (): UseAnalysisReturn => {
                             }
                         } else if (type === 'scene_complete') {
                             // payload: { scene_id, scene_path, ... }
-                            scenesRef.current.push(payload);
+                            scenesRef.current.push({
+                                scene_id: payload.scene_id,
+                                scene_path: payload.scene_path,
+                            });
                             progress = Math.min(95, (currentJob?.progress || 0) + 5);
                         } else if (type === 'complete') {
                             progress = 100;
@@ -128,8 +130,6 @@ export const useAnalysis = (): UseAnalysisReturn => {
 
                             // Deduplicate paths (in case same tile appears multiple times)
                             const uniquePaths = [...new Set(allScenePaths)];
-
-                            console.log('[Analysis] Collected scene paths:', uniquePaths.length);
 
                             const finalResult: AnalysisResult = {
                                 id: `analysis-${Date.now()}`,
@@ -155,10 +155,9 @@ export const useAnalysis = (): UseAnalysisReturn => {
                             return; // Done
                         } else if (type === 'no_scenes_error') {
                             // Backend found no scenes but suggested a date
-                            console.log('[Analysis] No scenes, suggestion:', payload);
                             setNoScenesSuggestion({
-                                suggestedDate: payload.suggested_date,
-                                originalDate: payload.original_date,
+                                suggestedDate: payload.suggested_date ?? '',
+                                originalDate: payload.original_date ?? '',
                                 message: payload.message || 'Keine Aufnahmen gefunden'
                             });
 
@@ -188,7 +187,7 @@ export const useAnalysis = (): UseAnalysisReturn => {
                     },
                     onError: (err) => {
                         console.error('SSE Error:', err);
-                        setError(err.message || 'Stream connection failed');
+                        setError(err instanceof Error && err.message ? err.message : 'Stream connection failed');
                         setCurrentJob(prev => prev ? { ...prev, status: AnalysisStatus.FAILED } : null);
                         setIsLoading(false);
                     },
@@ -205,8 +204,8 @@ export const useAnalysis = (): UseAnalysisReturn => {
 
             abortControllerRef.current = controller;
 
-        } catch (e: any) {
-            setError(e.message);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Failed to start analysis');
             setIsLoading(false);
         }
     }, [cancelAnalysis, currentJob, isLoading]); // Careful with dependencies

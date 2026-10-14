@@ -86,7 +86,7 @@ export function ingestScenesStream(
     params: IngestParams,
     callbacks: {
         onMessage: (event: SSEParsedEvent) => void;
-        onError?: (error: any) => void;
+        onError?: (error: unknown) => void;
         onClose?: () => void;
     }
 ): AbortController {

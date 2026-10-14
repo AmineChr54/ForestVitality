@@ -69,7 +69,7 @@ export const useAiInsights = (): UseAiInsightsReturn => {
     const [error, setError] = useState<string | null>(null);
 
     const askQuestion = useCallback(
-        async (question: string, _regionId?: string, _analysisId?: string): Promise<AiInsight> => {
+        async (question: string): Promise<AiInsight> => {
             setIsLoading(true);
             setError(null);
 

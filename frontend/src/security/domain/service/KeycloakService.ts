@@ -1,5 +1,14 @@
 import { SecurityConfig } from "../../SecurityConfig";
 
+/** Subset of the Keycloak OpenID Connect token endpoint response we rely on. */
+interface KeycloakTokenResponse {
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  error?: string;
+  error_description?: string;
+}
+
 export class KeycloakService {
   // === LOGIN REDIRECT ===
   login(): void {
@@ -12,7 +21,6 @@ export class KeycloakService {
       `&response_type=code` +
       `&scope=openid%20profile%20email`;
 
-    console.log("[Keycloak] Redirecting to auth URL:", authUrl);
     window.location.href = authUrl;
   }
 
@@ -21,13 +29,6 @@ export class KeycloakService {
     const { baseUrl, realm, clientId, redirectUri } = SecurityConfig.keycloak;
 
     const tokenUrl = `${baseUrl}/realms/${realm}/protocol/openid-connect/token`;
-
-    console.log("[Keycloak] Exchanging code for token...", {
-      tokenUrl,
-      clientId,
-      redirectUri,
-      codePreview: code ? `${code.slice(0, 10)}...` : "EMPTY",
-    });
 
     const body = new URLSearchParams({
       grant_type: "authorization_code",
@@ -48,7 +49,7 @@ export class KeycloakService {
     const responseText = await response.text();
 
     // Try parse JSON (Keycloak usually returns JSON)
-    let data: any = null;
+    let data: KeycloakTokenResponse | null = null;
     try {
       data = JSON.parse(responseText);
     } catch {
@@ -81,11 +82,9 @@ export class KeycloakService {
       throw new Error("No access_token returned from Keycloak.");
     }
 
-    console.log("[Keycloak] Token exchange succeeded ✅");
-
     return {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token
+      accessToken,
+      refreshToken: data?.refresh_token
     };
   }
 
@@ -127,7 +126,6 @@ export class KeycloakService {
       `?client_id=${encodeURIComponent(clientId)}` +
       `&post_logout_redirect_uri=${encodeURIComponent(postLogoutRedirectUri)}`;
 
-    console.log("[Keycloak] Redirecting to logout URL:", logoutUrl);
     window.location.href = logoutUrl;
   }
 }

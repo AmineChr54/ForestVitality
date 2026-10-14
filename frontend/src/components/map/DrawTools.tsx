@@ -129,6 +129,24 @@ export const DrawTools = ({ onDrawComplete, onCancel }: DrawToolsProps) => {
     };
   }, [mode, handleMapClick]);
 
+  // Close the drawn ring and convert it to a GeoJSON polygon
+  const finishDrawing = useCallback(() => {
+    if (points.length < 3) {
+      setError('Mindestens 3 Punkte benötigt');
+      return;
+    }
+
+    const coordinates: [number, number][] = points.map(p => [p.lng, p.lat]);
+    coordinates.push(coordinates[0]); // Close polygon
+
+    const geometry: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [coordinates],
+    };
+
+    setParsedGeometry(geometry);
+  }, [points]);
+
   // Update map with drawn points
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -174,7 +192,7 @@ export const DrawTools = ({ onDrawComplete, onCancel }: DrawToolsProps) => {
       }).addTo(map);
       polygonLayerRef.current = polygon;
     }
-  }, [points, mode]);
+  }, [points, mode, finishDrawing]);
 
   // Update map for import mode
   useEffect(() => {
@@ -207,24 +225,6 @@ export const DrawTools = ({ onDrawComplete, onCancel }: DrawToolsProps) => {
       }
     }
   }, [parsedGeometry, mode]);
-
-  const finishDrawing = () => {
-    if (points.length < 3) {
-      setError('Mindestens 3 Punkte benötigt');
-      return;
-    }
-
-    // Convert to GeoJSON
-    const coordinates: [number, number][] = points.map(p => [p.lng, p.lat]);
-    coordinates.push(coordinates[0]); // Close polygon
-
-    const geometry: GeoJSONPolygon = {
-      type: 'Polygon',
-      coordinates: [coordinates],
-    };
-
-    setParsedGeometry(geometry);
-  };
 
   const clearDrawing = () => {
     setPoints([]);

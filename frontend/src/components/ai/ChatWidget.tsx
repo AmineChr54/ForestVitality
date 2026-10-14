@@ -72,11 +72,6 @@ export const ChatWidget = () => {
                 zoom: mapBounds.zoom
             } : null;
 
-            // Log geo-context for debugging
-            if (geoContext) {
-                console.log('[ChatWidget] Sending with geo-context:', geoContext);
-            }
-
             // Call the REAL backend API with geo-context
             const response = await sendChatMessage(userMessage.content, history, geoContext);
 
@@ -88,13 +83,13 @@ export const ChatWidget = () => {
             };
 
             setMessages(prev => [...prev, assistantMessage]);
-        } catch (error: any) {
+        } catch (error) {
             console.error('[ChatWidget] Error:', error);
 
             let errorText = 'Sorry, there was an error connecting to the AI service.';
 
             // Handle customized AppError from httpClient (which wraps axios error)
-            const genericError = error as any;
+            const genericError = error as { status?: number; message?: string };
             if (genericError.status && !axios.isAxiosError(error)) {
                 if (genericError.status === 401) errorText = "Authentication failed (401). Please try logging out and back in.";
                 else if (genericError.status === 403) errorText = "Permission denied (403). Access restrictions apply.";
@@ -104,7 +99,7 @@ export const ChatWidget = () => {
             else if (axios.isAxiosError(error)) {
                 const status = error.response?.status;
                 const data = error.response?.data;
-                const detail = typeof data === 'object' && data ? (data as any).detail : null;
+                const detail = typeof data === 'object' && data ? (data as { detail?: string }).detail : null;
 
                 if (status === 401) errorText = "Authentication failed (401). Please try logging out and back in.";
                 else if (status === 403) errorText = "Permission denied (403). You don't have access to this resource.";

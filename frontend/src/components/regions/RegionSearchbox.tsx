@@ -5,7 +5,7 @@
  * User can either search directly OR drill down: Bundesland → Bezirk → Kreis
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { RegionItem } from '../../types/api';
 import './RegionSearchbox.css';
 
@@ -114,50 +114,6 @@ export const RegionSearchbox = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Handle keyboard navigation
-    const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
-        if (!isOpen && event.key !== 'Escape') {
-            if (event.key === 'ArrowDown' || event.key === 'Enter') {
-                setIsOpen(true);
-                event.preventDefault();
-            }
-            return;
-        }
-
-        switch (event.key) {
-            case 'ArrowDown':
-                event.preventDefault();
-                setHighlightedIndex((prev) =>
-                    prev < displayItems.length - 1 ? prev + 1 : 0
-                );
-                break;
-            case 'ArrowUp':
-                event.preventDefault();
-                setHighlightedIndex((prev) =>
-                    prev > 0 ? prev - 1 : displayItems.length - 1
-                );
-                break;
-            case 'Enter':
-                event.preventDefault();
-                if (highlightedIndex >= 0 && highlightedIndex < displayItems.length) {
-                    handleItemClick(displayItems[highlightedIndex]);
-                }
-                break;
-            case 'Escape':
-                event.preventDefault();
-                setIsOpen(false);
-                inputRef.current?.blur();
-                break;
-            case 'Backspace':
-                // Navigate back if search is empty
-                if (query === '' && navLevel !== 'root') {
-                    handleBack();
-                    event.preventDefault();
-                }
-                break;
-        }
-    }, [isOpen, highlightedIndex, displayItems, query, navLevel]);
-
     const handleItemClick = (item: RegionItem) => {
         // If searching, select directly
         if (query.trim().length > 0) {
@@ -256,6 +212,51 @@ export const RegionSearchbox = ({
     };
 
     const breadcrumb = getBreadcrumb();
+
+
+    // Handle keyboard navigation
+    const handleKeyDown = (event: React.KeyboardEvent) => {
+        if (!isOpen && event.key !== 'Escape') {
+            if (event.key === 'ArrowDown' || event.key === 'Enter') {
+                setIsOpen(true);
+                event.preventDefault();
+            }
+            return;
+        }
+
+        switch (event.key) {
+            case 'ArrowDown':
+                event.preventDefault();
+                setHighlightedIndex((prev) =>
+                    prev < displayItems.length - 1 ? prev + 1 : 0
+                );
+                break;
+            case 'ArrowUp':
+                event.preventDefault();
+                setHighlightedIndex((prev) =>
+                    prev > 0 ? prev - 1 : displayItems.length - 1
+                );
+                break;
+            case 'Enter':
+                event.preventDefault();
+                if (highlightedIndex >= 0 && highlightedIndex < displayItems.length) {
+                    handleItemClick(displayItems[highlightedIndex]);
+                }
+                break;
+            case 'Escape':
+                event.preventDefault();
+                setIsOpen(false);
+                inputRef.current?.blur();
+                break;
+            case 'Backspace':
+                // Navigate back if search is empty
+                if (query === '' && navLevel !== 'root') {
+                    handleBack();
+                    event.preventDefault();
+                }
+                break;
+        }
+    };
 
     return (
         <div className="region-searchbox" ref={containerRef}>

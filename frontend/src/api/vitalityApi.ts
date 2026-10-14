@@ -3,6 +3,7 @@
   */
 import { httpClient } from './httpClient';
 import type { ApiRegion, AnalysisRequest, AnalysisResult } from '../types/vitality';
+import type { Geometry, Feature, FeatureCollection } from 'geojson';
 
 /**
  * Get all regions for the current user
@@ -88,7 +89,7 @@ import { BAND_EXPRESSIONS } from '../constants/map';
  */
 export const fetchVitalityStatistics = async (
   scenePath: string,
-  geometry: any,
+  geometry: Geometry | Feature | FeatureCollection,
   indexType: string
 ): Promise<{ min: number; max: number; mean: number; median: number; std: number } | null> => {
   try {
@@ -121,11 +122,9 @@ export const fetchVitalityStatistics = async (
     // Usually standard TiTiler /statistics with Feature input returns a FeatureCollection with 1 feature.
 
     // Check if valid response
-    console.log('[VitalityStats] Response data:', response.data);
 
     if (response.data && response.data.features && response.data.features.length > 0) {
       const stats = response.data.features[0].properties.statistics;
-      console.log('[VitalityStats] Features stats:', stats);
 
       const firstKey = Object.keys(stats)[0];
       if (firstKey && stats[firstKey]) {
@@ -134,7 +133,6 @@ export const fetchVitalityStatistics = async (
     } else if (response.data && response.data.properties && response.data.properties.statistics) {
       // Fallback if it returns a single Feature
       const stats = response.data.properties.statistics;
-      console.log('[VitalityStats] Properties stats:', stats);
 
       const firstKey = Object.keys(stats)[0];
       if (firstKey && stats[firstKey]) {

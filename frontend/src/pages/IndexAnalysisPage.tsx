@@ -1,5 +1,5 @@
 // Index Analysis Page Component
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRegionSearch, useAnalysis } from '../hooks';
 import { useAuth } from '../hooks';
 import { canAnalyze } from '../utils/roleUtils';
@@ -11,7 +11,7 @@ import { RunAnalysisButton } from '../components/indexCalculator/RunAnalysisButt
 import { RegionSearchbox } from '../components/regions/RegionSearchbox';
 import { VegetationIndex, INDEX_INFO, AnalysisStatus } from '../types/vitality';
 import type { BandResolution } from '../types/vitality';
-import { getGeoJSONBBox } from '../utils/geoUtils';
+import { getGeoJSONBBox, splitIntoSubRegions } from '../utils/geoUtils';
 import { useRegions } from '../hooks/useRegions'; // Import local regions hook
 import { fetchVitalityStatistics } from '../api/vitalityApi';
 import './IndexAnalysisPage.css';
@@ -73,20 +73,24 @@ const IndexAnalysisPage = () => {
         }
     }, [customRegions, selectRegion]);
 
-    // Auto-correct resolution when index changes (e.g., NDMI only supports 20m)
-    useEffect(() => {
-        const info = INDEX_INFO[selectedIndex];
+    // Switching index also snaps the resolution to one the index supports (e.g. NDMI is 20m only)
+    const handleIndexChange = (index: VegetationIndex) => {
+        setSelectedIndex(index);
+        const info = INDEX_INFO[index];
         if (!info.availableResolutions.includes(selectedResolution)) {
             setSelectedResolution(info.defaultResolution);
         }
-    }, [selectedIndex, selectedResolution]);
+    };
 
     // Check if user can run analysis
     const userCanAnalyze = canAnalyze(user);
 
     // Get region ID for analysis results (use region name as ID for now)
     const regionId = selectedRegion ? `${selectedRegion.type}-${selectedRegion.name}` : null;
-    const regionResults = regionId ? getResultsByRegion(regionId) : [];
+    const regionResults = useMemo(
+        () => (regionId ? getResultsByRegion(regionId) : []),
+        [regionId, getResultsByRegion]
+    );
 
     // Track the configuration of the last manual run to enable auto-fetching
     const [lastRunConfig, setLastRunConfig] = useState<{
@@ -96,11 +100,9 @@ const IndexAnalysisPage = () => {
     } | null>(null);
 
     // Track the last auto-run attempt key to prevent infinite loops on failure
-    const [autoRunKey, setAutoRunKey] = useState<string | null>(null);
+    const autoRunKeyRef = useRef<string | null>(null);
 
     const isAnalyzing = currentJob?.status === AnalysisStatus.PROCESSING;
-
-
 
     // State for average index value
     const [averageIndexValue, setAverageIndexValue] = useState<number | null>(null);
@@ -132,7 +134,6 @@ const IndexAnalysisPage = () => {
                         const stats = await fetchVitalityStatistics(activeResult.scenePath!, geometry, selectedIndex);
 
                         if (stats) {
-                            console.log('[AnalysisPage] Got stats:', stats);
                             setAverageIndexValue(stats.mean);
                         } else {
                             setAverageIndexValue(null);
@@ -151,6 +152,45 @@ const IndexAnalysisPage = () => {
         const timer = setTimeout(fetchStats, 200);
         return () => clearTimeout(timer);
     }, [regionResults, selectedIndex, selectedGeometry, selectedRegion]);
+
+    const handleRunAnalysis = useCallback(async () => {
+        if (!selectedRegion || !selectedRegion.bbox) return;
+
+        // Reset average value on new run
+        setAverageIndexValue(null);
+
+        // Store this run configuration
+        if (regionId) {
+            setLastRunConfig({
+                regionId,
+                date: analysisDate,
+                resolution: selectedResolution
+            });
+        }
+
+        // Split MultiPolygons / collections into one sub-region per polygon
+        const subRegions = splitIntoSubRegions(selectedGeometry, selectedRegion.bbox);
+
+        // Run analysis for each sub-region sequentially
+        for (let i = 0; i < subRegions.length; i++) {
+            const sub = subRegions[i];
+
+            try {
+                await runAnalysis({
+                    regionId: regionId!,
+                    indexType: selectedIndex,
+                    resolution: selectedResolution,
+                    startDate: analysisDate,
+                    endDate: analysisDate,
+                    bbox: sub.bbox,
+                    geometry: sub.geometry,
+                }, { append: i > 0 }); // Append subsequent results
+            } catch (e) {
+                console.warn(`[Analysis] Failed to load sub-region ${i + 1}`, e);
+                // Continue with next region
+            }
+        }
+    }, [selectedRegion, regionId, analysisDate, selectedResolution, selectedGeometry, selectedIndex, runAnalysis]);
 
     // Auto-fetch when index changes if the context matches the last run
     useEffect(() => {
@@ -183,96 +223,14 @@ const IndexAnalysisPage = () => {
             // Generate key for current potential run (include resolution to be specific)
             const currentKey = `${regionId}-${analysisDate}-${selectedIndex}-${selectedResolution}`;
 
-            if (!hasResult && !isAnalyzing && autoRunKey !== currentKey) {
-                console.log('[AutoAnalysis] Triggering auto-fetch for new index:', selectedIndex);
-                setAutoRunKey(currentKey);
+            if (!hasResult && !isAnalyzing && autoRunKeyRef.current !== currentKey) {
+                autoRunKeyRef.current = currentKey;
+                // Kicking off the (async) analysis is the point of this effect; the ref guard prevents loops.
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 handleRunAnalysis();
             }
         }
-    }, [selectedIndex, regionId, analysisDate, selectedResolution, lastRunConfig, regionResults, isAnalyzing, autoRunKey]);
-
-    const handleRunAnalysis = async () => {
-        if (!selectedRegion || !selectedRegion.bbox) return;
-
-        // Reset average value on new run
-        setAverageIndexValue(null);
-
-        // Store this run configuration
-        if (regionId) {
-            setLastRunConfig({
-                regionId,
-                date: analysisDate,
-                resolution: selectedResolution
-            });
-        }
-
-        // Determine if we need to split the region (MultiPolygon)
-        let subRegions: { bbox: [number, number, number, number], geometry: any }[] = [];
-
-        // ... (rest of function logic) ...
-
-        // Recursive helper to flatten geometry into sub-regions
-        const processGeometry = (geo: any) => {
-            if (geo.type === 'Polygon') {
-                const coords = geo.coordinates;
-                const ring = coords[0];
-                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                ring.forEach((p: any) => {
-                    const [x, y] = p;
-                    minX = Math.min(minX, x);
-                    minY = Math.min(minY, y);
-                    maxX = Math.max(maxX, x);
-                    maxY = Math.max(maxY, y);
-                });
-                subRegions.push({
-                    bbox: [minX, minY, maxX, maxY],
-                    geometry: geo
-                });
-            } else if (geo.type === 'MultiPolygon') {
-                geo.coordinates.forEach((coords: any) => {
-                    processGeometry({ type: 'Polygon', coordinates: coords });
-                });
-            } else if (geo.type === 'GeometryCollection') {
-                // Check if geometries exists and is array
-                if (geo.geometries && Array.isArray(geo.geometries)) {
-                    geo.geometries.forEach((g: any) => processGeometry(g));
-                }
-            }
-        };
-
-        if (selectedGeometry) {
-            console.log('[Analysis] Processing geometry type:', selectedGeometry.type);
-            processGeometry(selectedGeometry);
-
-            // If flattening produced no regions (e.g. empty collection), fallback
-            if (subRegions.length === 0) {
-                subRegions = [{ bbox: selectedRegion.bbox, geometry: selectedGeometry }];
-            }
-        } else {
-            subRegions = [{ bbox: selectedRegion.bbox, geometry: selectedGeometry }];
-        }
-
-        // Run analysis for each sub-region sequentially
-        for (let i = 0; i < subRegions.length; i++) {
-            const sub = subRegions[i];
-            console.log(`[Analysis] Processing sub-region ${i + 1}/${subRegions.length}`);
-
-            try {
-                await runAnalysis({
-                    regionId: regionId!,
-                    indexType: selectedIndex,
-                    resolution: selectedResolution,
-                    startDate: analysisDate,
-                    endDate: analysisDate,
-                    bbox: sub.bbox,
-                    geometry: sub.geometry,
-                }, { append: i > 0 }); // Append subsequent results
-            } catch (e) {
-                console.warn(`[Analysis] Failed to load sub-region ${i + 1}`, e);
-                // Continue with next region
-            }
-        }
-    };
+    }, [selectedIndex, regionId, analysisDate, selectedResolution, lastRunConfig, regionResults, isAnalyzing, handleRunAnalysis]);
 
     const applySuggestion = () => {
         if (!noScenesSuggestion) return;
@@ -311,7 +269,7 @@ const IndexAnalysisPage = () => {
                                 <label className="control-label">Vegetationsindex</label>
                                 <IndexSelector
                                     selectedIndex={selectedIndex}
-                                    onSelect={setSelectedIndex}
+                                    onSelect={handleIndexChange}
                                 />
                             </div>
 

@@ -35,7 +35,7 @@ const LoginPage = () => {
     }
 
     const handleKeycloakLogin = async () => {
-        await login({} as any); // Credentials not needed, SecurityAPI.login() handles Keycloak redirect
+        await login(); // SecurityAPI.login() handles the Keycloak redirect
     };
 
     return (

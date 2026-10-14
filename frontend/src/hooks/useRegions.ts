@@ -106,7 +106,6 @@ export const useRegions = (): UseRegionsReturn => {
         setSelectedRegionId(newRegion.id);
         setIsLoading(false);
 
-        console.log('Region created and saved:', newRegion.name);
         return newRegion;
     }, []);
 
@@ -122,7 +121,6 @@ export const useRegions = (): UseRegionsReturn => {
             setSelectedRegionId(null);
         }
         setIsLoading(false);
-        console.log('Region deleted:', regionId);
     }, [selectedRegionId]);
 
     const refetch = useCallback(() => {
